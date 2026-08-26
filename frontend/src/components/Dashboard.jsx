@@ -17,6 +17,7 @@ export default function Dashboard(){
   const [jiraQuery, setJiraQuery] = useState('')
   const [jiraResults, setJiraResults] = useState([])
   const [jiraOpen, setJiraOpen] = useState(false)
+  const [jiraIssueType, setJiraIssueType] = useState('')
   const [hours,setHours] = useState('0')
   const [minutes,setMinutes] = useState('0')
   const [date,setDate] = useState(new Date().toISOString().slice(0,10))
@@ -123,6 +124,7 @@ export default function Dashboard(){
     if (selectedTag) data.append('tag', selectedTag)
     data.append('description', description)
     data.append('date', date)
+    if (jiraIssueType) data.append('jira_issue_type', jiraIssueType)
     // prefer start/end if provided
     if (startTime && endTime){
       const startIso = new Date(date + 'T' + startTime + ':00').toISOString()
@@ -175,16 +177,21 @@ export default function Dashboard(){
         <h3 className="brand-title">Dashboard</h3>
 
         <div className="top-bar mb-3">
-          <div style={{position:'relative', flex:'1 1 40%'}}>
-            <input className="form-control desc" placeholder="What have you worked on?" value={description} onChange={e=>setDescription(e.target.value)} />
-            <input className="form-control" style={{position:'absolute', right:8, top:8, width:160, padding:'6px 8px'}} placeholder="Jira ticket" value={jiraQuery} onChange={e=>setJiraQuery(e.target.value)} />
-            {jiraOpen && jiraResults.length>0 && (
-              <div className="tag-dropdown" style={{right:8, left:'auto', width:300, maxHeight:200, overflow:'auto'}}>
-                {jiraResults.map(i=> (
-                  <div key={i.key} className="tag-dropdown-item" onClick={()=>{ setDescription((prev)=>`${i.key}: ${i.summary}`); setJiraOpen(false); setJiraQuery('') }}>{i.key} — {i.summary}</div>
-                ))}
+          <div style={{position:'relative', flex:'1 1 40%', display:'flex', flexDirection:'column', gap:6}}>
+            <div style={{position:'relative'}}>
+              <div style={{display:'flex', alignItems:'center', gap:8}}>
+                <input className="form-control jira-input" placeholder="Jira ticket" value={jiraQuery} onChange={e=>setJiraQuery(e.target.value)} />
+                {jiraIssueType ? <span className="jira-type-badge">{jiraIssueType}</span> : null}
               </div>
-            )}
+              {jiraOpen && jiraResults.length>0 && (
+                  <div className="jira-dropdown above" style={{left:8, width:'calc(100% - 16px)', maxHeight:200, overflow:'auto'}}>
+                  {jiraResults.map(i=> (
+                      <div key={i.key} className="jira-item" onClick={()=>{ setDescription((prev)=>`${i.key}: ${i.summary}`); setJiraOpen(false); setJiraQuery(''); setJiraIssueType(i.issuetype || '') }}>{i.key} — {i.summary}</div>
+                    ))}
+                </div>
+              )}
+            </div>
+            <input className="form-control desc" placeholder="What have you worked on?" value={description} onChange={e=>setDescription(e.target.value)} />
           </div>
 
           <div>
@@ -269,6 +276,7 @@ export default function Dashboard(){
                   <tr>
                     <th>Orario</th>
                     <th>Durata</th>
+                    <th>Tipo</th>
                     <th>Progetto</th>
                     <th>Tag</th>
                     <th>Descrizione</th>
@@ -279,6 +287,7 @@ export default function Dashboard(){
                     <tr key={e.id}>
                       <td>{formatTime(e.start)} — {e.end ? formatTime(e.end) : 'in corso'}</td>
                       <td>{formatDuration(e.start, e.end)}</td>
+                      <td>{e.jira_issue_type || ''}</td>
                       <td>{e.project || 'No project'}</td>
                       <td>
                         {(e.tags || []).map((tname, idx)=> (

@@ -131,6 +131,7 @@ def api_entries(request):
         data.append({
             'id': e.id,
             'project': e.project.name if e.project else None,
+            'jira_issue_type': e.jira_issue_type if hasattr(e, 'jira_issue_type') else None,
             'description': e.description if hasattr(e, 'description') else None,
             'start': e.start.isoformat(),
             'end': e.end.isoformat() if e.end else None,
@@ -165,7 +166,8 @@ def api_jira_search(request):
             if r.status_code != 200:
                 return JsonResponse({'error': 'not found', 'status': r.status_code}, status=404)
             js = r.json()
-            return JsonResponse({'issues': [{'key': js.get('key'), 'summary': js.get('fields',{}).get('summary')} ]})
+            itype = js.get('fields', {}).get('issuetype', {}) or {}
+            return JsonResponse({'issues': [{'key': js.get('key'), 'summary': js.get('fields',{}).get('summary'), 'issuetype': itype.get('name')}]})
 
         # if q looks like an issue key (e.g. PROJ-123) do exact issue lookup
         import re
@@ -175,7 +177,8 @@ def api_jira_search(request):
             r = requests.get(url, auth=auth, timeout=5)
             if r.status_code == 200:
                 js = r.json()
-                return JsonResponse({'issues': [{'key': js.get('key'), 'summary': js.get('fields',{}).get('summary')} ]})
+                itype = js.get('fields', {}).get('issuetype', {}) or {}
+                return JsonResponse({'issues': [{'key': js.get('key'), 'summary': js.get('fields',{}).get('summary'), 'issuetype': itype.get('name')} ]})
             else:
                 return JsonResponse({'issues': []})
 
@@ -200,7 +203,9 @@ def api_jira_search(request):
         js = r.json()
         issues = []
         for it in js.get('issues', []):
-            issues.append({'key': it.get('key'), 'summary': it.get('fields', {}).get('summary')})
+            f = it.get('fields', {})
+            issuetype = (f.get('issuetype') or {}).get('name')
+            issues.append({'key': it.get('key'), 'summary': f.get('summary'), 'issuetype': issuetype})
         return JsonResponse({'issues': issues})
     except Exception as e:
         return JsonResponse({'error': 'jira_exception', 'detail': str(e)}, status=500)
@@ -282,6 +287,11 @@ def api_add_entry(request):
         end_dt = start_dt + duration
 
     entry = TimeEntry.objects.create(user=request.user, project=project, description=description, start=start_dt, end=end_dt)
+    # optional jira issue type
+    jira_issue_type = request.POST.get('jira_issue_type')
+    if jira_issue_type:
+        entry.jira_issue_type = jira_issue_type
+        entry.save()
     # set tags: prefer list 'tags' if present
     if tag_ids:
         tags_qs = Tag.objects.filter(id__in=tag_ids, owner__is_superuser=True)

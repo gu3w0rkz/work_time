@@ -63,6 +63,7 @@ class TimeEntry(models.Model):
     project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True)
     tags = models.ManyToManyField(Tag, blank=True, related_name='entries')
     description = models.CharField(max_length=500, blank=True)
+    jira_issue_type = models.CharField(max_length=100, blank=True, null=True)
     start = models.DateTimeField(default=timezone.now)
     end = models.DateTimeField(null=True, blank=True)
 

@@ -1,6 +1,6 @@
 # WorkTime (minimal)
 
-Progetto minimo Django per tracciamento tempo simile a Clockify.
+Progetto minimo Django per tracciamento tempo.
 
 Istruzioni rapide:
 

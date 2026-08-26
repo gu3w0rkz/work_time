@@ -63,8 +63,9 @@ body{
 .entries-day-header{ background: linear-gradient(90deg, rgba(47,184,111,0.06), rgba(255,191,128,0.03)); font-weight:600 }
 
 /* Top bar Clockify-like */
-.top-bar{ display:flex; gap:0.5rem; align-items:center; padding:0.5rem; border-radius:6px; background: linear-gradient(180deg, #ffffff, #fbfffb); box-shadow:0 1px 6px rgba(10,10,10,0.04); }
-.top-bar .desc{ flex:1 1 40%; height:44px }
+.top-bar{ display:flex; gap:0.5rem; align-items:flex-start; padding:0.5rem; border-radius:6px; background: linear-gradient(180deg, #ffffff, #fbfffb); box-shadow:0 1px 6px rgba(10,10,10,0.04); }
+.top-bar .desc{ flex:1 1 40%; height:auto }
+.jira-input{ width:100%; padding:6px 8px; height:36px; box-sizing:border-box }
 .top-bar .project-w{ width:140px }
 .top-bar .med-w{ width:140px }
 .top-bar .time-w{ width:100px }
@@ -117,8 +118,10 @@ body{
 .tag-dropdown-item{ padding:8px 10px; cursor:pointer }
 .tag-dropdown-item:hover{ background:#f1fbf6 }
 .jira-search{ position:relative }
-.jira-dropdown{ position:absolute; top:calc(100% + 6px); right:0; background:white; border:1px solid #e6eef0; box-shadow:0 6px 18px rgba(10,10,10,0.06); border-radius:6px; z-index:50; min-width:260px }
+.jira-dropdown{ position:absolute; right:auto; background:white; border:1px solid #e6eef0; box-shadow:0 6px 18px rgba(10,10,10,0.06); border-radius:6px; z-index:9999; min-width:260px }
+.jira-dropdown.above{ bottom:calc(100% + 6px); top:auto }
 .jira-item{ padding:8px 10px; cursor:pointer }
 .jira-item:hover{ background:#f7f7f7 }
+.jira-type-badge{ background:#eef6ff; color:#0b4a8a; border:1px solid #d0e5ff; padding:6px 8px; border-radius:8px; font-weight:600; font-size:0.85rem }
 .tag-display.tag-selected .tag-chip{ background:transparent; border:none; padding:0; font-weight:600 }
 

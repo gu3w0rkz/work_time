@@ -1,0 +1,145 @@
+{% extends 'tracker/base.html' %}
+
+{% block content %}
+  <h2>Dashboard</h2>
+
+  <section>
+    <h3>Progetti</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="text" name="name" placeholder="Nuovo progetto">
+      <button name="action" value="add_project" type="submit">Aggiungi</button>
+    </form>
+    <ul>
+      {% for p in projects %}
+        <li>{{ p.name }}</li>
+      {% empty %}
+        <li>Nessun progetto</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section>
+    <h3>Timer</h3>
+    <div class="d-flex gap-2 align-items-center">
+      <select class="form-select" id="project-select" style="max-width:300px">
+        <option value="">-- nessuno --</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}">{{ p.name }}</option>
+        {% endfor %}
+      </select>
+
+      <select multiple class="form-select" id="tag-select" style="max-width:300px">
+        {% for t in tags %}
+          <option value="{{ t.id }}">{{ t.name }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="input-group" style="max-width:300px">
+        <input id="new-tag-name" class="form-control" placeholder="Nuovo tag">
+        <button id="add-tag-btn" class="btn btn-outline-secondary">Aggiungi</button>
+      </div>
+
+      <button id="toggle-btn" class="btn btn-primary">{% if open_entry %}Stop{% else %}Start{% endif %}</button>
+      <div id="timer-display">{% if open_entry %}In corso da {{ open_entry.start }}{% else %}Nessun timer attivo{% endif %}</div>
+    </div>
+  </section>
+
+  <section>
+    <h3>Ultime attività</h3>
+    <ul>
+      {% for e in entries %}
+        <li>
+          {{ e.start }} — {% if e.end %}{{ e.end }} ({{ e.duration }}){% else %}in corso{% endif %} —
+          {% if e.project %}{{ e.project.name }}{% else %}No project{% endif %}
+        </li>
+      {% empty %}
+        <li>Nessuna attività</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <script>
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    const toggleBtn = document.getElementById('toggle-btn');
+    const projectSelect = document.getElementById('project-select');
+    const timerDisplay = document.getElementById('timer-display');
+
+    async function toggle() {
+      const csrftoken = getCookie('csrftoken');
+        const data = new URLSearchParams();
+        data.append('project', projectSelect.value);
+        // append selected tags
+        for (const opt of tagSelect.selectedOptions) {
+          data.append('tags', opt.value);
+        }
+      const resp = await fetch('{% url "tracker:api_toggle" %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrftoken},
+        body: data
+      });
+      if (!resp.ok) {
+        alert('Errore nel toggle');
+        return;
+      }
+      const j = await resp.json();
+      if (j.status === 'started') {
+        toggleBtn.textContent = 'Stop';
+        timerDisplay.textContent = 'In corso da ' + new Date(j.start).toLocaleString();
+      } else if (j.status === 'stopped') {
+        toggleBtn.textContent = 'Start';
+        timerDisplay.textContent = 'Nessun timer attivo';
+      }
+    }
+
+    toggleBtn.addEventListener('click', function(e){ e.preventDefault(); toggle(); });
+
+    // create new tag via AJAX
+    const addTagBtn = document.getElementById('add-tag-btn');
+    const newTagName = document.getElementById('new-tag-name');
+    const tagSelectEl = document.getElementById('tag-select');
+
+    async function createTag(name) {
+      const csrftoken = getCookie('csrftoken');
+      const data = new URLSearchParams();
+      data.append('name', name);
+      const resp = await fetch('{% url "tracker:api_tag_create" %}', {
+        method: 'POST', headers: {'X-CSRFToken': csrftoken}, body: data
+      });
+      if (!resp.ok) {
+        alert('Errore creazione tag');
+        return null;
+      }
+      return await resp.json();
+    }
+
+    addTagBtn.addEventListener('click', async function(e){
+      e.preventDefault();
+      const name = newTagName.value.trim();
+      if (!name) return;
+      const j = await createTag(name);
+      if (j && j.id) {
+        // add option to select and select it
+        const opt = document.createElement('option');
+        opt.value = j.id; opt.textContent = j.name; opt.selected = true;
+        tagSelectEl.appendChild(opt);
+        newTagName.value = '';
+      }
+    });
+  </script>
+
+{% endblock %}

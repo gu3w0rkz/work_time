@@ -1,0 +1,107 @@
+:root{
+  --wt-green: #2fb86f;
+  --wt-green-dark: #27a35f;
+  --wt-orange: #ffbf80;
+  --wt-orange-dark: #ff9f43;
+  --wt-bg: #f7fff8;
+}
+
+body{
+  background: var(--wt-bg);
+  color: #0b2a1a;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+.brand-header{
+  background: linear-gradient(90deg,var(--wt-orange),transparent 60%);
+  padding: 1rem 0.5rem;
+}
+
+.brand-title{ color: #083218; font-weight:700 }
+
+/* Buttons */
+.btn-primary{
+  background-color: var(--wt-green);
+  border-color: var(--wt-green);
+  color: white;
+}
+.btn-primary:hover{ background-color: var(--wt-green-dark); border-color: var(--wt-green-dark); }
+
+.btn-outline-primary{
+  color: var(--wt-orange);
+  border-color: var(--wt-orange);
+}
+.btn-outline-primary:hover{ background-color: rgba(255,191,128,0.12); }
+
+.btn-start{
+  background-color: var(--wt-green);
+  border-color: var(--wt-green);
+  color: white;
+}
+.btn-start:hover{ background-color: var(--wt-green-dark); }
+
+.btn-stop{
+  background-color: var(--wt-orange);
+  border-color: var(--wt-orange);
+  color: #5a3300;
+}
+
+.tag-button-selected{ background-color: var(--wt-green); color: white; border-color: var(--wt-green); }
+
+.card-panel{ background:white; border-radius:8px; padding:1rem; box-shadow:0 1px 4px rgba(10,10,10,0.06); }
+
+/* Inline compact form */
+.inline-form{ display:flex; gap:0.5rem; align-items:flex-end; flex-wrap:wrap; }
+.inline-form .form-control, .inline-form .form-select{ height:38px; }
+.inline-form .flex-grow{ flex:1 1 40%; }
+.inline-form .small-w{ width:80px }
+.inline-form .med-w{ width:150px }
+.inline-form .project-w{ width:200px }
+
+.entries-table{ width:100%; border-collapse:collapse; margin-top:0.5rem }
+.entries-table th, .entries-table td{ padding:0.5rem 0.75rem; border-bottom:1px solid #edf7ee }
+.entries-day-header{ background: linear-gradient(90deg, rgba(47,184,111,0.06), rgba(255,191,128,0.03)); font-weight:600 }
+
+/* Top bar Clockify-like */
+.top-bar{ display:flex; gap:0.5rem; align-items:center; padding:0.5rem; border-radius:6px; background: linear-gradient(180deg, #ffffff, #fbfffb); box-shadow:0 1px 6px rgba(10,10,10,0.04); }
+.top-bar .desc{ flex:1 1 40%; height:44px }
+.top-bar .project-w{ width:180px }
+.top-bar .med-w{ width:140px }
+.top-bar .time-w{ width:100px }
+.top-bar .date-w{ width:140px }
+.top-bar .duration{ color:#2f8f5d; min-width:80px; text-align:center }
+.btn-add{ background:#0ea5ff; color:white; border:none; padding:10px 16px; border-radius:4px }
+.btn-toggle{ background:transparent; border:1px solid #e6eef0; padding:8px 10px; border-radius:4px }
+.week-total{ margin-left:8px; margin-right:4px; color:#6b6b6b }
+
+/* SVG add button positioned above/near timer */
+.btn-add-icon{ background:#0ea5ff; border:none; width:44px; height:44px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(14,165,255,0.18); cursor:pointer }
+.btn-add-icon:disabled{ opacity:0.45; cursor:not-allowed }
+.btn-add-icon svg{ display:block }
+.btn-toggle{ margin-left:0; background: white; border: 1px solid #e6eef0; width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; box-shadow:0 1px 3px rgba(10,10,10,0.04); font-size:18px }
+.btn-toggle:active{ transform: translateY(1px) }
+
+/* vertical stack for add + timer */
+.add-toggle-stack{ display:flex; flex-direction:column; align-items:center; gap:6px }
+.top-bar .add-toggle-stack{ margin-left:8px }
+
+.entries-day-header{ display:flex; justify-content:space-between; align-items:center }
+.day-total{ color:#2f8f5d; font-weight:600 }
+
+/* play/pause buttons per row */
+.row-action{ display:flex; gap:8px; align-items:center }
+.btn-play{ background:var(--wt-green); color:white; border:none; padding:6px 8px; border-radius:4px }
+.btn-pause{ background:var(--wt-orange); color:#5a3300; border:none; padding:6px 8px; border-radius:4px }
+.btn-disabled{ opacity:0.5; pointer-events:none }
+
+.week-summary{ margin-left:12px; font-size:0.9rem; color:#47585a }
+.week-summary li{ list-style:none; padding:2px 0 }
+
+/* selected tag chips */
+.selected-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px }
+.tag-chip{ display:inline-flex; align-items:center; gap:6px; background:#f1fbf6; border:1px solid rgba(47,184,111,0.12); padding:4px 8px; border-radius:12px; font-size:0.85rem }
+.tag-icon{ margin-right:2px }
+.tag-remove{ background:transparent; border:none; margin-left:6px; cursor:pointer; font-weight:700 }
+
+.entries-table .tag-chip{ background:#fff8f0; border-color: rgba(255,159,67,0.12); color:#6b4b00 }
+

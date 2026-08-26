@@ -1,0 +1,13 @@
+{% extends 'tracker/base.html' %}
+
+{% block content %}
+  <h2>Accedi</h2>
+  <form method="post">
+    {% csrf_token %}
+    <label for="id_username">Email</label>
+    <input type="text" name="username" id="id_username" required autofocus>
+    <label for="id_password">Password</label>
+    <input type="password" name="password" id="id_password" required>
+    <button type="submit">Accedi</button>
+  </form>
+{% endblock %}

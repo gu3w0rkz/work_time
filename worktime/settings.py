@@ -5,6 +5,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJ_SECRET', 'dev-secret')
 
+# Optionally load a local .env file if python-dotenv is installed.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / '.env')
+except Exception:
+    pass
+
+# Jira configuration read from environment (or from .env when present)
+JIRA_BASE_URL = os.environ.get('JIRA_BASE_URL')
+JIRA_EMAIL = os.environ.get('JIRA_EMAIL')
+JIRA_API_TOKEN = os.environ.get('JIRA_API_TOKEN')
+JIRA_CONFIGURED = bool(JIRA_BASE_URL and JIRA_EMAIL and JIRA_API_TOKEN)
+
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']

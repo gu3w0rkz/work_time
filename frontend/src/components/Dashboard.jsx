@@ -11,9 +11,12 @@ export default function Dashboard(){
   const [entries,setEntries] = useState([])
   const [selectedProject,setSelectedProject] = useState('')
   const [selectedTag,setSelectedTag] = useState('')
-  const [selectedTags,setSelectedTags] = useState([])
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false)
   const [selectedProjectName, setSelectedProjectName] = useState('')
   const [description,setDescription] = useState('')
+  const [jiraQuery, setJiraQuery] = useState('')
+  const [jiraResults, setJiraResults] = useState([])
+  const [jiraOpen, setJiraOpen] = useState(false)
   const [hours,setHours] = useState('0')
   const [minutes,setMinutes] = useState('0')
   const [date,setDate] = useState(new Date().toISOString().slice(0,10))
@@ -22,6 +25,21 @@ export default function Dashboard(){
   const [weekTotal, setWeekTotal] = useState('')
 
   useEffect(()=>{ fetchData() }, [])
+
+  useEffect(()=>{
+    async function search(){
+      if(!jiraQuery || jiraQuery.length<2) { setJiraResults([]); return }
+      try{
+        const resp = await fetch('/api/jira/search/?q='+encodeURIComponent(jiraQuery), {credentials:'include'})
+        if(!resp.ok) return
+        const j = await resp.json()
+        setJiraResults(j.issues || [])
+        setJiraOpen(true)
+      }catch(err){ console.error(err) }
+    }
+    const t = setTimeout(search, 300)
+    return ()=>clearTimeout(t)
+  }, [jiraQuery])
 
   async function fetchData(){
     const p = await (await fetch('/api/projects/', {credentials:'include'})).json()
@@ -86,8 +104,7 @@ export default function Dashboard(){
   async function toggle(){
     const data = new URLSearchParams();
     data.append('project', selectedProject);
-    if (selectedTags && selectedTags.length>0){ selectedTags.forEach(t=> data.append('tags', t)) }
-    else if (selectedTag) data.append('tags', selectedTag);
+    if (selectedTag) data.append('tags', selectedTag);
     const resp = await fetch('/api/toggle/', {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
     if (resp.ok){ fetchData() }
   }
@@ -103,12 +120,7 @@ export default function Dashboard(){
     // project: prefer id found from typed project name
     const projectId = selectedProject || findProjectIdByName(selectedProjectName)
     data.append('project', projectId)
-    // append multiple tags if selected
-    if(selectedTags && selectedTags.length>0){
-      selectedTags.forEach(t=> data.append('tags', t))
-    } else if (selectedTag){
-      data.append('tag', selectedTag)
-    }
+    if (selectedTag) data.append('tag', selectedTag)
     data.append('description', description)
     data.append('date', date)
     // prefer start/end if provided
@@ -128,7 +140,6 @@ export default function Dashboard(){
       setMinutes('0')
       setSelectedProject('')
       setSelectedTag('')
-      setSelectedTags([])
       setSelectedProjectName('')
       setStartTime('09:00')
       setEndTime('10:00')
@@ -164,36 +175,53 @@ export default function Dashboard(){
         <h3 className="brand-title">Dashboard</h3>
 
         <div className="top-bar mb-3">
-          <input className="form-control desc" placeholder="What have you worked on?" value={description} onChange={e=>setDescription(e.target.value)} />
+          <div style={{position:'relative', flex:'1 1 40%'}}>
+            <input className="form-control desc" placeholder="What have you worked on?" value={description} onChange={e=>setDescription(e.target.value)} />
+            <input className="form-control" style={{position:'absolute', right:8, top:8, width:160, padding:'6px 8px'}} placeholder="Jira ticket" value={jiraQuery} onChange={e=>setJiraQuery(e.target.value)} />
+            {jiraOpen && jiraResults.length>0 && (
+              <div className="tag-dropdown" style={{right:8, left:'auto', width:300, maxHeight:200, overflow:'auto'}}>
+                {jiraResults.map(i=> (
+                  <div key={i.key} className="tag-dropdown-item" onClick={()=>{ setDescription((prev)=>`${i.key}: ${i.summary}`); setJiraOpen(false); setJiraQuery('') }}>{i.key} — {i.summary}</div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div>
-            <input list="projects-list" className="form-control project-w" placeholder="-- Project --" value={selectedProjectName} onChange={e=>{setSelectedProjectName(e.target.value); setSelectedProject('')}} />
-            <datalist id="projects-list">
-              {projects.map(p=> <option key={p.id} value={p.name} />)}
-            </datalist>
+            <select className="form-control project-w" value={selectedProject} onChange={e=>{
+              const val = e.target.value
+              setSelectedProject(val)
+              const p = projects.find(p=>String(p.id)===String(val))
+              setSelectedProjectName(p ? p.name : '')
+            }}>
+              <option value="">-- Project --</option>
+              {projects.map(p=> (<option key={p.id} value={p.id}>{p.name}</option>))}
+            </select>
           </div>
 
-          <select multiple className="form-select med-w" value={selectedTags} onChange={e=>{
-            const opts = Array.from(e.target.selectedOptions).map(o=>o.value)
-            setSelectedTags(opts)
-            setSelectedTag(opts[0]||'')
-          }}>
-            {tags.map(t=> <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-
-          <div className="selected-tags">
-            {selectedTags.map(id => {
-              const t = tags.find(x=>String(x.id)===String(id))
-              if(!t) return null
-              return (
-                <span key={id} className="tag-chip">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="#e8fff3"/></svg>
-                  {t.name}
-                  <button className="tag-remove" onClick={()=> setSelectedTags(prev => prev.filter(x=>String(x)!==String(id)))}>×</button>
-                </span>
-              )
-            })}
-          </div>
+            <div className="tag-select-wrapper">
+              {!selectedTag ? (
+                <button className="tag-open" onClick={()=>setTagDropdownOpen(open=>!open)} title="Select tag">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M20.59 13.41L13.41 20.59C12.85 21.15 12.07 21.15 11.51 20.59L3.41 12.49C2.82 11.9 2.82 11.0 3.41 10.41L10.59 3.23C11.17 2.64 12.01 2.64 12.59 3.23L20.59 11.23C21.17 11.82 21.17 12.68 20.59 13.26V13.41Z" stroke="#2f8f5d" strokeWidth="1" fill="#e8fff3" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="tag-display tag-selected" onClick={()=>setTagDropdownOpen(true)}>
+                  <span className="tag-chip">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="#e8fff3"/></svg>
+                    {(tags.find(t=>String(t.id)===String(selectedTag))||{name:''}).name}
+                  </span>
+                </div>
+              )}
+              {tagDropdownOpen && (
+                <div className="tag-dropdown">
+                  {tags.map(t=> (
+                    <div key={t.id} className="tag-dropdown-item" onClick={()=>{ setSelectedTag(t.id); setTagDropdownOpen(false) }}>{t.name}</div>
+                  ))}
+                </div>
+              )}
+            </div>
 
           <input type="time" className="form-control time-w" value={startTime} onChange={e=>setStartTime(e.target.value)} />
           <input type="time" className="form-control time-w" value={endTime} onChange={e=>setEndTime(e.target.value)} />
@@ -216,17 +244,7 @@ export default function Dashboard(){
         </div>
 
         <h5>Ultime attività</h5>
-        <div className="week-total mb-3">Week total: <strong>{weekTotal}</strong>
-          <ul className="week-summary">
-            {groupByDate(entries).map(g=>{
-              let daySec=0
-              g.items.forEach(e=>{ if(e.start){ const s=new Date(e.start); const en=e.end?new Date(e.end):new Date(); daySec+=Math.max(0,(en-s)/1000) } })
-              const dh = Math.floor(daySec/3600)
-              const dm = Math.floor((daySec-dh*3600)/60)
-              return <li key={g.date}>{g.date}: {dh}h {dm}m</li>
-            })}
-          </ul>
-        </div>
+        <div className="week-total mb-3">Week total: <strong>{weekTotal}</strong></div>
 
         {groupByDate(entries).map(g=> {
             // compute day total
@@ -273,17 +291,16 @@ export default function Dashboard(){
                       <td>{e.description || ''}</td>
                       <td className="row-action">
                         {e.end ? (
-                          <button className="btn-play" title="Start a new timer for this project" onClick={()=>{
-                            // start new timer with same project/tags
-                            setSelectedProject(projects.find(p=>p.name===e.project)?.id || '')
-                            const tagIds = (e.tags || []).map(tname=> tags.find(t=>t.name===tname)?.id).filter(Boolean)
-                            if(tagIds.length) setSelectedTags(tagIds)
-                            // call toggle to start
-                            toggle()
-                          }}>▶</button>
+                          <></>
                         ) : (
                           <button className="btn-pause" title="Stop running timer" onClick={()=>{ toggle() }}>⏸</button>
                         )}
+                        <button className="btn-delete" title="Delete entry" onClick={async()=>{
+                          if(!confirm('Eliminare questa attività?')) return
+                          const data = new URLSearchParams(); data.append('id', e.id)
+                          const resp = await fetch('/api/delete_entry/', {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
+                          if(resp.ok){ fetchData() } else { alert('Errore durante l\'eliminazione') }
+                        }}>🗑</button>
                       </td>
                     </tr>
                   ))}

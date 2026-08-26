@@ -56,7 +56,7 @@ body{
 .inline-form .flex-grow{ flex:1 1 40%; }
 .inline-form .small-w{ width:80px }
 .inline-form .med-w{ width:150px }
-.inline-form .project-w{ width:200px }
+.inline-form .project-w{ width:140px }
 
 .entries-table{ width:100%; border-collapse:collapse; margin-top:0.5rem }
 .entries-table th, .entries-table td{ padding:0.5rem 0.75rem; border-bottom:1px solid #edf7ee }
@@ -65,7 +65,7 @@ body{
 /* Top bar Clockify-like */
 .top-bar{ display:flex; gap:0.5rem; align-items:center; padding:0.5rem; border-radius:6px; background: linear-gradient(180deg, #ffffff, #fbfffb); box-shadow:0 1px 6px rgba(10,10,10,0.04); }
 .top-bar .desc{ flex:1 1 40%; height:44px }
-.top-bar .project-w{ width:180px }
+.top-bar .project-w{ width:140px }
 .top-bar .med-w{ width:140px }
 .top-bar .time-w{ width:100px }
 .top-bar .date-w{ width:140px }
@@ -93,15 +93,32 @@ body{
 .btn-play{ background:var(--wt-green); color:white; border:none; padding:6px 8px; border-radius:4px }
 .btn-pause{ background:var(--wt-orange); color:#5a3300; border:none; padding:6px 8px; border-radius:4px }
 .btn-disabled{ opacity:0.5; pointer-events:none }
+.btn-delete{ background:transparent; border:none; color:#b4312f; font-size:16px; padding:6px; cursor:pointer }
+.btn-delete:hover{ background: rgba(180,49,47,0.06); border-radius:6px }
 
-.week-summary{ margin-left:12px; font-size:0.9rem; color:#47585a }
-.week-summary li{ list-style:none; padding:2px 0 }
+/* week-summary removed — only week total is shown now */
 
 /* selected tag chips */
 .selected-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px }
-.tag-chip{ display:inline-flex; align-items:center; gap:6px; background:#f1fbf6; border:1px solid rgba(47,184,111,0.12); padding:4px 8px; border-radius:12px; font-size:0.85rem }
-.tag-icon{ margin-right:2px }
-.tag-remove{ background:transparent; border:none; margin-left:6px; cursor:pointer; font-weight:700 }
+.tag-chip{ display:inline-flex; align-items:center; gap:4px; background:#f1fbf6; border:1px solid rgba(47,184,111,0.12); padding:2px 6px; border-radius:10px; font-size:0.78rem }
+.tag-chip svg, .tag-chip .tag-icon{ width:10px; height:10px }
+.tag-icon{ margin-right:4px }
+.tag-remove{ background:transparent; border:none; margin-left:6px; cursor:pointer; font-weight:700; padding:0 }
 
-.entries-table .tag-chip{ background:#fff8f0; border-color: rgba(255,159,67,0.12); color:#6b4b00 }
+.entries-table .tag-chip{ background:#fff8f0; border-color: rgba(255,159,67,0.12); color:#6b4b00; padding:2px 6px; font-size:0.78rem }
+
+/* tag select dropdown */
+.tag-select-wrapper{ position:relative; display:inline-flex; align-items:center; gap:6px }
+.tag-display{ padding:2px }
+.tag-display.tag-selected{ cursor:pointer }
+.tag-open{ background:transparent; border:none; padding:4px; cursor:pointer; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px }
+.tag-open svg{ display:block }
+.tag-dropdown{ position:absolute; top:calc(100% + 6px); left:0; background:white; border:1px solid #e6eef0; box-shadow:0 6px 18px rgba(10,10,10,0.06); border-radius:6px; z-index:40; min-width:180px }
+.tag-dropdown-item{ padding:8px 10px; cursor:pointer }
+.tag-dropdown-item:hover{ background:#f1fbf6 }
+.jira-search{ position:relative }
+.jira-dropdown{ position:absolute; top:calc(100% + 6px); right:0; background:white; border:1px solid #e6eef0; box-shadow:0 6px 18px rgba(10,10,10,0.06); border-radius:6px; z-index:50; min-width:260px }
+.jira-item{ padding:8px 10px; cursor:pointer }
+.jira-item:hover{ background:#f7f7f7 }
+.tag-display.tag-selected .tag-chip{ background:transparent; border:none; padding:0; font-weight:600 }
 

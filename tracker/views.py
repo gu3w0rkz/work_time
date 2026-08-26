@@ -11,6 +11,11 @@ from django.views.decorators.http import require_POST
 from django.middleware.csrf import get_token
 from django.core import serializers
 from django.forms.models import model_to_dict
+import requests
+import logging
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 class LoginView(auth_views.LoginView):
     template_name = 'tracker/login.html'
@@ -126,11 +131,79 @@ def api_entries(request):
         data.append({
             'id': e.id,
             'project': e.project.name if e.project else None,
+            'description': e.description if hasattr(e, 'description') else None,
             'start': e.start.isoformat(),
             'end': e.end.isoformat() if e.end else None,
             'tags': [t.name for t in e.tags.all()],
         })
     return JsonResponse({'entries': data})
+
+
+@login_required
+def api_jira_search(request):
+    """Proxy endpoint to search Jira issues. Query params: q (text) or key (issue key).
+    Returns JSON list of {key, summary}.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'unauthenticated'}, status=403)
+
+    base = getattr(settings, 'JIRA_BASE_URL', None)
+    email = getattr(settings, 'JIRA_EMAIL', None)
+    token = getattr(settings, 'JIRA_API_TOKEN', None)
+    if not base or not email or not token:
+        return JsonResponse({'error': 'jira_not_configured'}, status=500)
+
+    q = request.GET.get('q', '').strip()
+    key = request.GET.get('key', '').strip()
+    auth = (email, token)
+
+    try:
+        # if 'key' param provided use issue GET
+        if key:
+            url = f"{base.rstrip('/')}/rest/api/3/issue/{key}"
+            r = requests.get(url, auth=auth, timeout=5)
+            if r.status_code != 200:
+                return JsonResponse({'error': 'not found', 'status': r.status_code}, status=404)
+            js = r.json()
+            return JsonResponse({'issues': [{'key': js.get('key'), 'summary': js.get('fields',{}).get('summary')} ]})
+
+        # if q looks like an issue key (e.g. PROJ-123) do exact issue lookup
+        import re
+        if q and re.match(r'^[A-Za-z0-9]+-\d+$', q.strip()):
+            issue_key = q.strip().upper()
+            url = f"{base.rstrip('/')}/rest/api/3/issue/{issue_key}"
+            r = requests.get(url, auth=auth, timeout=5)
+            if r.status_code == 200:
+                js = r.json()
+                return JsonResponse({'issues': [{'key': js.get('key'), 'summary': js.get('fields',{}).get('summary')} ]})
+            else:
+                return JsonResponse({'issues': []})
+
+        if not q:
+            return JsonResponse({'issues': []})
+
+        # use new Jira API endpoint /rest/api/3/search/jql with POST payload
+        # broaden search: issue key OR summary OR description; allow optional project filter
+        project_filter = request.GET.get('project')
+        jql_parts = [f'issuekey ~ "{q}"', f'summary ~ "{q}"', f'description ~ "{q}"']
+        if project_filter:
+            jql_parts.insert(0, f'project = "{project_filter}"')
+        jql = ' OR '.join(jql_parts)
+        url = f"{base.rstrip('/')}/rest/api/3/search/jql"
+        payload = {'jql': jql, 'maxResults': 50, 'fields': ['summary', 'key', 'project', 'issuetype', 'labels']}
+        headers = {'Content-Type': 'application/json'}
+        r = requests.post(url, json=payload, auth=auth, headers=headers, timeout=8)
+        if r.status_code != 200:
+            body = r.text
+            logger.error('Jira search (jql) failed %s %s', r.status_code, body[:1000])
+            return JsonResponse({'error': 'jira_error', 'status': r.status_code, 'detail': body[:1000]}, status=502)
+        js = r.json()
+        issues = []
+        for it in js.get('issues', []):
+            issues.append({'key': it.get('key'), 'summary': it.get('fields', {}).get('summary')})
+        return JsonResponse({'issues': issues})
+    except Exception as e:
+        return JsonResponse({'error': 'jira_exception', 'detail': str(e)}, status=500)
 
 
 @login_required
@@ -169,11 +242,39 @@ def api_add_entry(request):
     start_iso = request.POST.get('start')
     end_iso = request.POST.get('end')
     if start_iso and end_iso:
+        def parse_iso(s):
+            # try fromisoformat, but accept trailing Z (UTC) and fallback to naive parse
+            try:
+                return datetime.datetime.fromisoformat(s)
+            except Exception:
+                # handle Zulu 'Z' suffix
+                if isinstance(s, str) and s.endswith('Z'):
+                    try:
+                        return datetime.datetime.fromisoformat(s[:-1] + '+00:00')
+                    except Exception:
+                        pass
+                # fallback: try without fractional seconds/timezone
+                try:
+                    return datetime.datetime.strptime(s, '%Y-%m-%dT%H:%M:%S')
+                except Exception:
+                    raise
+
         try:
-            start_dt = datetime.datetime.fromisoformat(start_iso)
-            end_dt = datetime.datetime.fromisoformat(end_iso)
+            start_dt = parse_iso(start_iso)
+            end_dt = parse_iso(end_iso)
         except Exception:
             return JsonResponse({'error': 'invalid datetime format'}, status=400)
+
+        # ensure timezone-aware datetimes in current timezone
+        if start_dt.tzinfo is None:
+            start_dt = timezone.make_aware(start_dt)
+        else:
+            start_dt = start_dt.astimezone(timezone.get_current_timezone())
+        if end_dt.tzinfo is None:
+            end_dt = timezone.make_aware(end_dt)
+        else:
+            end_dt = end_dt.astimezone(timezone.get_current_timezone())
+
         duration = end_dt - start_dt
     else:
         start_dt = datetime.datetime.combine(d, dtime.min)
@@ -188,3 +289,18 @@ def api_add_entry(request):
     elif tag:
         entry.tags.set([tag])
     return JsonResponse({'ok': True, 'id': entry.id})
+
+
+@login_required
+@require_POST
+def api_delete_entry(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'unauthenticated'}, status=403)
+    entry_id = request.POST.get('id') or request.POST.get('entry')
+    if not entry_id:
+        return JsonResponse({'error': 'missing id'}, status=400)
+    entry = TimeEntry.objects.filter(id=entry_id, user=request.user).first()
+    if not entry:
+        return JsonResponse({'error': 'not found'}, status=404)
+    entry.delete()
+    return JsonResponse({'ok': True, 'id': entry_id})

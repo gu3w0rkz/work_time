@@ -17,4 +17,6 @@ urlpatterns = [
     path('api/tags/', views.api_tags, name='api_tags'),
     path('api/entries/', views.api_entries, name='api_entries'),
     path('api/add_entry/', views.api_add_entry, name='api_add_entry'),
+    path('api/delete_entry/', views.api_delete_entry, name='api_delete_entry'),
+    path('api/jira/search/', views.api_jira_search, name='api_jira_search'),
 ]

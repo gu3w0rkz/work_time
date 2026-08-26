@@ -40,14 +40,53 @@ class User(AbstractUser):
 
 class Tag(models.Model):
     name = models.CharField(max_length=100)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tags')
+    # owner removed: tags are global
+    color = models.CharField(max_length=7, blank=True, null=True)
+    hours = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('owner', 'name')
+        unique_together = (('name',),)
 
     def __str__(self):
         return self.name
+
+    def get_color(self):
+        """Return a dict with 'bg' and 'border' colors.
+
+        If `color` is set, use it as background and compute a darker border.
+        Otherwise derive defaults from the name (bug -> red, miglioramento/feature -> green).
+        """
+        def darken_hex(hx, amount=0.28):
+            # hx like #RRGGBB
+            try:
+                hx = hx.lstrip('#')
+                r = int(hx[0:2], 16)
+                g = int(hx[2:4], 16)
+                b = int(hx[4:6], 16)
+                r = max(0, int(r * (1 - amount)))
+                g = max(0, int(g * (1 - amount)))
+                b = max(0, int(b * (1 - amount)))
+                return f"#{r:02x}{g:02x}{b:02x}"
+            except Exception:
+                return '#999999'
+
+        if self.color:
+            bg = self.color
+        else:
+            n = (self.name or '').lower()
+            if 'bug' in n:
+                bg = '#ffecec'  # very light red background
+            elif 'miglior' in n or 'improv' in n or 'feature' in n:
+                bg = '#f2fff0'  # very light green background
+            else:
+                bg = '#f3f3f3'  # light gray
+        border = darken_hex(bg, amount=0.38)
+        return {'bg': bg, 'border': border}
+
+
+# Palette of light background colors for tag selection (bg hexes)
+PALETTE = ['#fff7f7', '#fffaf0', '#f7fff8', '#f0f7ff', '#f7f0ff', '#f7fbff', '#f3f3f3']
 
 
 class Project(models.Model):

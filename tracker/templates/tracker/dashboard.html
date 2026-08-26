@@ -1,14 +1,16 @@
 {% extends 'tracker/base.html' %}
 
+{% load i18n %}
+
 {% block content %}
-  <h2>Dashboard</h2>
+  <h2>{% trans "Dashboard" %}</h2>
 
   <section>
-    <h3>Progetti</h3>
+    <h3>{% trans "Progetti" %}</h3>
     <form method="post">
       {% csrf_token %}
-      <input type="text" name="name" placeholder="Nuovo progetto">
-      <button name="action" value="add_project" type="submit">Aggiungi</button>
+      <input type="text" name="name" placeholder="{% trans "Nuovo progetto" %}">
+      <button name="action" value="add_project" type="submit">{% trans "Aggiungi" %}</button>
     </form>
     <ul>
       {% for p in projects %}
@@ -23,7 +25,7 @@
     <h3>Timer</h3>
     <div class="d-flex gap-2 align-items-center">
       <select class="form-select" id="project-select" style="max-width:300px">
-        <option value="">-- nessuno --</option>
+        <option value="">-- {% trans "nessuno" %} --</option>
         {% for p in projects %}
           <option value="{{ p.id }}">{{ p.name }}</option>
         {% endfor %}
@@ -36,22 +38,22 @@
       </select>
 
       <div class="input-group" style="max-width:300px">
-        <input id="new-tag-name" class="form-control" placeholder="Nuovo tag">
-        <button id="add-tag-btn" class="btn btn-outline-secondary">Aggiungi</button>
+        <input id="new-tag-name" class="form-control" placeholder="{% trans "Nuovo tag" %}">
+        <button id="add-tag-btn" class="btn btn-outline-secondary">{% trans "Aggiungi" %}</button>
       </div>
 
-      <button id="toggle-btn" class="btn btn-primary">{% if open_entry %}Stop{% else %}Start{% endif %}</button>
-      <div id="timer-display">{% if open_entry %}In corso da {{ open_entry.start }}{% else %}Nessun timer attivo{% endif %}</div>
+      <button id="toggle-btn" class="btn btn-primary">{% if open_entry %}{% trans "Stop" %}{% else %}{% trans "Start" %}{% endif %}</button>
+      <div id="timer-display">{% if open_entry %}{% trans "In corso da" %} {{ open_entry.start }}{% else %}{% trans "Nessun timer attivo" %}{% endif %}</div>
     </div>
   </section>
 
   <section>
-    <h3>Ultime attività</h3>
+    <h3>{% trans "Ultime attività" %}</h3>
     <ul>
       {% for e in entries %}
         <li>
-          {{ e.start }} — {% if e.end %}{{ e.end }} ({{ e.duration }}){% else %}in corso{% endif %} —
-          {% if e.project %}{{ e.project.name }}{% else %}No project{% endif %}
+          {{ e.start }} — {% if e.end %}{{ e.end }} ({{ e.duration }}){% else %}{% trans "in corso" %}{% endif %} —
+          {% if e.project %}{{ e.project.name }}{% else %}{% trans "No project" %}{% endif %}
         </li>
       {% empty %}
         <li>Nessuna attività</li>
@@ -93,7 +95,7 @@
         body: data
       });
       if (!resp.ok) {
-        alert('Errore nel toggle');
+        alert('{% trans "Errore nel toggle" %}');
         return;
       }
       const j = await resp.json();
@@ -121,7 +123,7 @@
         method: 'POST', headers: {'X-CSRFToken': csrftoken}, body: data
       });
       if (!resp.ok) {
-        alert('Errore creazione tag');
+        alert('{% trans "Errore creazione tag" %}');
         return null;
       }
       return await resp.json();

@@ -117,6 +117,7 @@ body{
 .tag-dropdown{ position:absolute; top:calc(100% + 6px); left:0; background:white; border:1px solid #e6eef0; box-shadow:0 6px 18px rgba(10,10,10,0.06); border-radius:6px; z-index:40; min-width:180px }
 .tag-dropdown-item{ padding:8px 10px; cursor:pointer }
 .tag-dropdown-item:hover{ background:#f1fbf6 }
+.lang-select{ margin-right:8px }
 .jira-search{ position:relative }
 .jira-dropdown{ position:absolute; right:auto; background:white; border:1px solid #e6eef0; box-shadow:0 6px 18px rgba(10,10,10,0.06); border-radius:6px; z-index:9999; min-width:260px }
 .jira-dropdown.above{ bottom:calc(100% + 6px); top:auto }

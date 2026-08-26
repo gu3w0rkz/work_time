@@ -14,6 +14,7 @@ from django.forms.models import model_to_dict
 import requests
 import logging
 from django.conf import settings
+from django.utils import translation
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def dashboard(request):
     entries = TimeEntry.objects.filter(user=request.user).order_by('-start')[:50]
     # show projects and tags created by superuser(s)
     projects = Project.objects.filter(owner__is_superuser=True)
-    tags = Tag.objects.filter(owner__is_superuser=True)
+    tags = Tag.objects.all()
     open_entry = TimeEntry.objects.filter(user=request.user, end__isnull=True).first()
     return render(request, 'tracker/dashboard.html', {
         'entries': entries,
@@ -63,8 +64,8 @@ def toggle_ajax(request):
         # handle tags (multiple)
         tag_ids = request.POST.getlist('tags')
         if tag_ids:
-            # accept only tags created by superuser
-            tags = Tag.objects.filter(id__in=tag_ids, owner__is_superuser=True)
+            # accept only existing tags (creation reserved to admin)
+            tags = Tag.objects.filter(id__in=tag_ids)
             entry.tags.set(tags)
         return JsonResponse({'status': 'started', 'id': entry.id, 'start': entry.start.isoformat()})
 
@@ -79,14 +80,40 @@ def create_tag_ajax(request):
     name = request.POST.get('name', '').strip()
     if not name:
         return JsonResponse({'error': 'missing name'}, status=400)
-    tag, created = Tag.objects.get_or_create(owner=request.user, name=name)
-    return JsonResponse({'id': tag.id, 'name': tag.name, 'created': created})
+    tag, created = Tag.objects.get_or_create(name=name)
+    color = request.POST.get('color')
+    if color:
+        tag.color = color
+        tag.save()
+    col = tag.get_color()
+    if isinstance(col, dict):
+        color_obj = col
+    else:
+        color_obj = {'bg': col, 'border': col}
+    return JsonResponse({'id': tag.id, 'name': tag.name, 'color': color_obj, 'created': created})
 
 
 def api_csrf(request):
     # returns csrf token and sets cookie
     token = get_token(request)
     return JsonResponse({'csrfToken': token})
+
+
+def api_get_language(request):
+    # return current language code
+    lang = getattr(request, 'LANGUAGE_CODE', None) or request.session.get('django_language') or settings.LANGUAGE_CODE
+    return JsonResponse({'language': lang})
+
+
+@require_POST
+def api_set_language(request):
+    lang = request.POST.get('language')
+    if not lang or lang not in dict(settings.LANGUAGES):
+        return JsonResponse({'error': 'invalid_language'}, status=400)
+    # store in session and activate for this request
+    request.session['django_language'] = lang
+    translation.activate(lang)
+    return JsonResponse({'language': lang})
 
 
 @require_POST
@@ -117,8 +144,15 @@ def api_projects(request):
 def api_tags(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'unauthenticated'}, status=403)
-    qs = Tag.objects.filter(owner=request.user)
-    data = [{'id': t.id, 'name': t.name} for t in qs]
+    qs = Tag.objects.all()
+    data = []
+    for t in qs:
+        col = t.get_color()
+        # if stored color is just hex, ensure bg uses it
+        if isinstance(col, dict):
+            data.append({'id': t.id, 'name': t.name, 'color': col})
+        else:
+            data.append({'id': t.id, 'name': t.name, 'color': {'bg': col, 'border': col}})
     return JsonResponse({'tags': data})
 
 
@@ -135,7 +169,7 @@ def api_entries(request):
             'description': e.description if hasattr(e, 'description') else None,
             'start': e.start.isoformat(),
             'end': e.end.isoformat() if e.end else None,
-            'tags': [t.name for t in e.tags.all()],
+            'tags': [({'id': t.id, 'name': t.name, 'color': (t.get_color() if isinstance(t.get_color(), dict) else {'bg': t.get_color(), 'border': t.get_color()})}) for t in e.tags.all()],
         })
     return JsonResponse({'entries': data})
 
@@ -232,7 +266,7 @@ def api_add_entry(request):
     project = Project.objects.filter(id=project_id, owner__is_superuser=True).first() if project_id else None
 
     # validate tag (only superuser-created tags allowed)
-    tag = Tag.objects.filter(id=tag_id, owner__is_superuser=True).first() if tag_id else None
+    tag = Tag.objects.filter(id=tag_id).first() if tag_id else None
 
     # parse date
     try:

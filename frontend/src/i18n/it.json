@@ -1,0 +1,18 @@
+{
+  "dashboard": "Dashboard",
+  "jira_ticket": "Ticket Jira",
+  "what_worked": "Cosa hai fatto?",
+  "project_placeholder": "-- Progetto --",
+  "add_tag": "Aggiungi tag",
+  "tag_name": "Nome tag",
+  "create": "Crea",
+  "add_entry": "Aggiungi attività",
+  "start_stop": "Start/Stop timer",
+  "week_total": "Totale settimana",
+  "last_activities": "Ultime attività",
+  "enter_tag_name": "Inserisci nome tag",
+  "select_tag": "Seleziona tag",
+  "error_create_tag": "Errore creazione tag",
+  "error_toggle": "Errore nel toggle",
+  "add_entry_tooltip": "Compila tutti i campi richiesti"
+}

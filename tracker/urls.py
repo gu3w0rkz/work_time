@@ -19,4 +19,6 @@ urlpatterns = [
     path('api/add_entry/', views.api_add_entry, name='api_add_entry'),
     path('api/delete_entry/', views.api_delete_entry, name='api_delete_entry'),
     path('api/jira/search/', views.api_jira_search, name='api_jira_search'),
+    path('api/lang/', views.api_get_language, name='api_get_language'),
+    path('api/set_language/', views.api_set_language, name='api_set_language'),
 ]

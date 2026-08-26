@@ -6,6 +6,7 @@ function getCookie(name){
 }
 
 export default function Dashboard(){
+  const PALETTE = ['#fff7f7', '#fffaf0', '#f7fff8', '#f0f7ff', '#f7f0ff', '#f7fbff', '#f3f3f3']
   const [projects,setProjects] = useState([])
   const [tags,setTags] = useState([])
   const [entries,setEntries] = useState([])
@@ -24,8 +25,63 @@ export default function Dashboard(){
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('10:00')
   const [weekTotal, setWeekTotal] = useState('')
+  const [lang, setLang] = useState('it')
+
+  const I18N = {
+    it: {
+      dashboard: 'Dashboard',
+      jira_ticket: 'Jira ticket',
+      what_worked: 'What have you worked on?',
+      project_placeholder: '-- Project --',
+      add_tag: 'Aggiungi tag',
+      tag_name: 'Nome tag',
+      create: 'Crea',
+      add_entry: 'Aggiungi attività',
+      start_stop: 'Start/Stop timer',
+      week_total: 'Week total',
+      last_activities: 'Ultime attività',
+      enter_tag_name: 'Inserisci nome tag',
+      select_tag: 'Seleziona tag',
+      error_create_tag: 'Errore creazione tag',
+      error_toggle: 'Errore nel toggle',
+      add_entry_tooltip: 'Compila tutti i campi richiesti',
+    },
+    en: {
+      dashboard: 'Dashboard',
+      jira_ticket: 'Jira ticket',
+      what_worked: 'What have you worked on?',
+      project_placeholder: '-- Project --',
+      add_tag: 'Add tag',
+      tag_name: 'Tag name',
+      create: 'Create',
+      add_entry: 'Add entry',
+      start_stop: 'Start/Stop timer',
+      week_total: 'Week total',
+      last_activities: 'Last activities',
+      enter_tag_name: 'Enter tag name',
+      select_tag: 'Select tag',
+      error_create_tag: 'Error creating tag',
+      error_toggle: 'Toggle error',
+      add_entry_tooltip: 'Fill all required fields',
+    }
+  }
+
+  const t = (key) => (I18N[lang] && I18N[lang][key]) || I18N['it'][key]
+  const [showNewTag, setShowNewTag] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState(PALETTE[0])
 
   useEffect(()=>{ fetchData() }, [])
+
+  useEffect(()=>{
+    // get current language from server
+    (async ()=>{
+      try{
+        const r = await fetch('/api/lang/', {credentials:'include'})
+        if(r.ok){ const j = await r.json(); setLang(j.language && j.language.slice(0,2) || 'it') }
+      }catch(e){ }
+    })()
+  }, [])
 
   useEffect(()=>{
     async function search(){
@@ -171,16 +227,20 @@ export default function Dashboard(){
 
   // single tag selection handled by the select input
 
-  return (
+    return (
     <div className="container py-4">
-      <div className="card-panel">
-        <h3 className="brand-title">Dashboard</h3>
+      <div className="card-panel" style={{position:'relative'}}>
+        <div style={{position:'absolute', right:12, top:12, display:'flex', gap:8, zIndex:1000}}>
+          <button className="btn btn-sm" onClick={async()=>{ setLang('it'); try{ const data=new URLSearchParams(); data.append('language','it'); await fetch('/api/set_language/',{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇮🇹'}</button>
+          <button className="btn btn-sm" onClick={async()=>{ setLang('en'); try{ const data=new URLSearchParams(); data.append('language','en'); await fetch('/api/set_language/',{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇬🇧'}</button>
+        </div>
+        <h3 className="brand-title">{t('dashboard')}</h3>
 
         <div className="top-bar mb-3">
           <div style={{position:'relative', flex:'1 1 40%', display:'flex', flexDirection:'column', gap:6}}>
             <div style={{position:'relative'}}>
               <div style={{display:'flex', alignItems:'center', gap:8}}>
-                <input className="form-control jira-input" placeholder="Jira ticket" value={jiraQuery} onChange={e=>setJiraQuery(e.target.value)} />
+                <input className="form-control jira-input" placeholder={t('jira_ticket')} value={jiraQuery} onChange={e=>setJiraQuery(e.target.value)} />
                 {jiraIssueType ? <span className="jira-type-badge">{jiraIssueType}</span> : null}
               </div>
               {jiraOpen && jiraResults.length>0 && (
@@ -191,7 +251,7 @@ export default function Dashboard(){
                 </div>
               )}
             </div>
-            <input className="form-control desc" placeholder="What have you worked on?" value={description} onChange={e=>setDescription(e.target.value)} />
+            <input className="form-control desc" placeholder={t('what_worked')} value={description} onChange={e=>setDescription(e.target.value)} />
           </div>
 
           <div>
@@ -201,31 +261,66 @@ export default function Dashboard(){
               const p = projects.find(p=>String(p.id)===String(val))
               setSelectedProjectName(p ? p.name : '')
             }}>
-              <option value="">-- Project --</option>
+              <option value="">{t('project_placeholder')}</option>
               {projects.map(p=> (<option key={p.id} value={p.id}>{p.name}</option>))}
             </select>
           </div>
 
             <div className="tag-select-wrapper">
               {!selectedTag ? (
-                <button className="tag-open" onClick={()=>setTagDropdownOpen(open=>!open)} title="Select tag">
+                <button className="tag-open" onClick={()=>setTagDropdownOpen(open=>!open)} title={t('select_tag')}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M20.59 13.41L13.41 20.59C12.85 21.15 12.07 21.15 11.51 20.59L3.41 12.49C2.82 11.9 2.82 11.0 3.41 10.41L10.59 3.23C11.17 2.64 12.01 2.64 12.59 3.23L20.59 11.23C21.17 11.82 21.17 12.68 20.59 13.26V13.41Z" stroke="#2f8f5d" strokeWidth="1" fill="#e8fff3" />
                   </svg>
                 </button>
               ) : (
                 <div className="tag-display tag-selected" onClick={()=>setTagDropdownOpen(true)}>
-                  <span className="tag-chip">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="#e8fff3"/></svg>
-                    {(tags.find(t=>String(t.id)===String(selectedTag))||{name:''}).name}
-                  </span>
+                  {(() => {
+                    const tObj = tags.find(t=>String(t.id)===String(selectedTag)) || {name:''}
+                    const bg = tObj && tObj.color && tObj.color.bg ? tObj.color.bg : (tObj && tObj.color ? tObj.color : '#f3f3f3')
+                    const border = tObj && tObj.color && tObj.color.border ? tObj.color.border : '#bdbdbd'
+                    return (
+                      <span className="tag-chip" style={{backgroundColor: bg, border: `2px solid ${border}`, color: '#083218'}}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="white"/></svg>
+                        {tObj.name}
+                      </span>
+                    )
+                  })()}
                 </div>
               )}
               {tagDropdownOpen && (
                 <div className="tag-dropdown">
-                  {tags.map(t=> (
-                    <div key={t.id} className="tag-dropdown-item" onClick={()=>{ setSelectedTag(t.id); setTagDropdownOpen(false) }}>{t.name}</div>
-                  ))}
+                  <div style={{padding:8}}>
+                    <button className="btn btn-outline-primary" onClick={()=>{ setShowNewTag(s=>!s); setNewTagName(''); }}>{t('add_tag')}</button>
+                  </div>
+                  {showNewTag && (
+                    <div style={{padding:8, display:'grid', gridTemplateColumns:'repeat(8, 44px)', gap:8}}>
+                      {PALETTE.map(c=> (
+                        <button key={c} aria-label={c} title={c} onClick={()=>setNewTagColor(c)} style={{width:44,height:28,background:c,border:newTagColor===c? '3px solid #666' : '2px solid #bbb', borderRadius:6, cursor:'pointer'}} />
+                      ))}
+                      <div style={{gridColumn:'1 / -1', display:'flex', gap:8, marginTop:8}}>
+                        <input className="form-control" placeholder={t('tag_name')} value={newTagName} onChange={e=>setNewTagName(e.target.value)} />
+                        <button className="btn btn-primary" onClick={async()=>{
+                          if(!newTagName) return alert(t('enter_tag_name'))
+                          const data = new URLSearchParams(); data.append('name', newTagName); data.append('color', newTagColor)
+                          const resp = await fetch('/api/create_tag/', {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
+                          if(resp.ok){ const j = await resp.json(); setTags(prev=>[...prev, j]); setShowNewTag(false); setSelectedTag(j.id) } else { alert(t('error_create_tag')) }
+                        }}>{t('create')}</button>
+                      </div>
+                    </div>
+                  )}
+                  {tags.map(t=> {
+                    const bg = t && t.color && t.color.bg ? t.color.bg : (t && t.color ? t.color : '#f3f3f3')
+                    const border = t && t.color && t.color.border ? t.color.border : '#bdbdbd'
+                    return (
+                      <div key={t.id} className="tag-dropdown-item" onClick={()=>{ setSelectedTag(t.id); setTagDropdownOpen(false) }}>
+                        <span className="tag-chip" style={{backgroundColor: bg, border: `2px solid ${border}`, color: '#083218'}}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="white"/></svg>
+                          {t.name}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -238,7 +333,7 @@ export default function Dashboard(){
           <div className="px-2 duration">{formatDuration(date+'T'+startTime+':00', date+'T'+endTime+':00')}</div>
 
           <div className="add-toggle-stack">
-            <button aria-label="Add entry" className="btn-add-icon" onClick={addEntry} disabled={!isValidAdd()} title={isValidAdd() ? 'Add entry' : 'Compila tutti i campi richiesti'}>
+            <button aria-label={t('add_entry')} className="btn-add-icon" onClick={addEntry} disabled={!isValidAdd()} title={isValidAdd() ? t('add_entry') : t('add_entry_tooltip')}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <rect x="2" y="11" width="20" height="2" rx="1" fill="white"/>
                 <rect x="11" y="2" width="2" height="20" rx="1" fill="white"/>
@@ -290,12 +385,18 @@ export default function Dashboard(){
                       <td>{e.jira_issue_type || ''}</td>
                       <td>{e.project || 'No project'}</td>
                       <td>
-                        {(e.tags || []).map((tname, idx)=> (
-                          <span key={idx} className="tag-chip">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="#e8fff3"/></svg>
-                            {tname}
-                          </span>
-                        ))}
+                        {(e.tags || []).map((t, idx)=> {
+                          const name = (typeof t === 'string') ? t : t.name
+                          const color = (typeof t === 'string') ? null : (t.color || null)
+                          const bg = color && color.bg ? color.bg : (color || '#f3f3f3')
+                          const border = color && color.border ? color.border : '#bdbdbd'
+                          return (
+                            <span key={idx} className="tag-chip" style={ color ? {backgroundColor: bg, border: `2px solid ${border}`, color: '#083218'} : {} }>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="white"/></svg>
+                              {name}
+                            </span>
+                          )
+                        })}
                       </td>
                       <td>{e.description || ''}</td>
                       <td className="row-action">

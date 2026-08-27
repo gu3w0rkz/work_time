@@ -1,11 +1,12 @@
 <!doctype html>
-{% load i18n %}
+{% load static i18n %}
 <html lang="{{ LANGUAGE_CODE|default:'it' }}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>WorkTime</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'tracker/styles.css' %}?v=2" rel="stylesheet">
   </head>
   <body>
     <header class="p-3 bg-light mb-3">

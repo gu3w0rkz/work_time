@@ -35,7 +35,6 @@ local_settings.py
 db.sqlite3
 # media and static (if you serve/upload locally)
 media/
-staticfiles/
 
 # Node / frontend
 node_modules/

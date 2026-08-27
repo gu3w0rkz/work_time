@@ -14,7 +14,7 @@
     </form>
     <ul>
       {% for p in projects %}
-        <li>{{ p.name }}</li>
+        <li>{{ p.nome }}</li>
       {% empty %}
         <li>Nessun progetto</li>
       {% endfor %}
@@ -27,13 +27,13 @@
       <select class="form-select" id="project-select" style="max-width:300px">
         <option value="">-- {% trans "nessuno" %} --</option>
         {% for p in projects %}
-          <option value="{{ p.id }}">{{ p.name }}</option>
+          <option value="{{ p.id }}">{{ p.nome }}</option>
         {% endfor %}
       </select>
 
       <select multiple class="form-select" id="tag-select" style="max-width:300px">
         {% for t in tags %}
-          <option value="{{ t.id }}">{{ t.name }}</option>
+          <option value="{{ t.id }}">{{ t.nome }}</option>
         {% endfor %}
       </select>
 
@@ -43,7 +43,7 @@
       </div>
 
       <button id="toggle-btn" class="btn btn-primary">{% if open_entry %}{% trans "Stop" %}{% else %}{% trans "Start" %}{% endif %}</button>
-      <div id="timer-display">{% if open_entry %}{% trans "In corso da" %} {{ open_entry.start }}{% else %}{% trans "Nessun timer attivo" %}{% endif %}</div>
+      <div id="timer-display">{% if open_entry %}{% trans "In corso da" %} {{ open_entry.inizio }}{% else %}{% trans "Nessun timer attivo" %}{% endif %}</div>
     </div>
   </section>
 
@@ -52,8 +52,8 @@
     <ul>
       {% for e in entries %}
         <li>
-          {{ e.start }} — {% if e.end %}{{ e.end }} ({{ e.duration }}){% else %}{% trans "in corso" %}{% endif %} —
-          {% if e.project %}{{ e.project.name }}{% else %}{% trans "No project" %}{% endif %}
+          {{ e.inizio }} — {% if e.fine %}{{ e.fine }} ({{ e.duration }}){% else %}{% trans "in corso" %}{% endif %} —
+          {% if e.progetto %}{{ e.progetto.nome }}{% else %}{% trans "No project" %}{% endif %}
         </li>
       {% empty %}
         <li>Nessuna attività</li>

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Project, TimeEntry, Tag, PALETTE
+from .models import User, Project, TimeEntry, Tag
 from django import forms
 from django.utils.html import format_html, mark_safe
 from django.utils import timezone
@@ -26,18 +26,17 @@ class UserAdmin(BaseUserAdmin):
     )
 
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('name', 'owner')
+    list_display = ('nome', 'responsabile')
     filter_horizontal = ('tags',)
 
 
 class TimeEntryAdmin(admin.ModelAdmin):
     def tags_display(self, obj):
-        return ", ".join([t.name for t in obj.tags.all()])
+        return ", ".join([t.nome for t in obj.tags.all()])
     tags_display.short_description = 'Tags'
-
-    list_display = ('user', 'project', 'start', 'end', 'jira_issue_type', 'tags_display')
+    list_display = ('utente', 'progetto', 'inizio', 'fine', 'tipo_ticket', 'tags_display')
     filter_horizontal = ('tags',)
-    readonly_fields = ('jira_issue_type',)
+    readonly_fields = ('tipo_ticket',)
     actions = ['export_as_csv']
 
     def export_as_csv(self, request, queryset):
@@ -45,13 +44,13 @@ class TimeEntryAdmin(admin.ModelAdmin):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="time_entries.csv"'
         writer = csv.writer(response)
-        writer.writerow(['id', 'user', 'user_email', 'project', 'start', 'end', 'duration_seconds', 'duration_hm', 'tags', 'description', 'jira_issue_type'])
+        writer.writerow(['id', 'user', 'user_email', 'project', 'start', 'end', 'duration_seconds', 'duration_hm', 'tags', 'description', 'tipo_ticket'])
         for e in queryset:
-            tags = ", ".join([t.name for t in e.tags.all()])
-            start = e.start.isoformat() if e.start else ''
-            end = e.end.isoformat() if e.end else ''
+            tags = ", ".join([t.nome for t in e.tags.all()])
+            start = e.inizio.isoformat() if e.inizio else ''
+            end = e.fine.isoformat() if e.fine else ''
             try:
-                dur_seconds = int((e.end - e.start).total_seconds()) if e.end else int((timezone.now() - e.start).total_seconds())
+                dur_seconds = int((e.fine - e.inizio).total_seconds()) if e.fine else int((timezone.now() - e.inizio).total_seconds())
             except Exception:
                 dur_seconds = ''
             duration_hm = ''
@@ -59,46 +58,15 @@ class TimeEntryAdmin(admin.ModelAdmin):
                 h = dur_seconds // 3600
                 m = (dur_seconds % 3600) // 60
                 duration_hm = f"{h}h {m}m"
-            writer.writerow([e.id, str(e.user), getattr(e.user, 'email', ''), e.project.name if e.project else '', start, end, dur_seconds, duration_hm, tags, e.description or '', e.jira_issue_type or ''])
+            writer.writerow([e.id, str(e.utente), getattr(e.utente, 'email', ''), e.progetto.nome if e.progetto else '', start, end, dur_seconds, duration_hm, tags, getattr(e, 'descrizione', '') or '', e.tipo_ticket or ''])
         return response
     export_as_csv.short_description = 'Export selected TimeEntry as CSV'
 
 
 admin.site.register(User, UserAdmin)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', 'hours', 'color', 'color_preview')
-    search_fields = ('name',)
-
-    def color_preview(self, obj):
-        c = obj.color or obj.get_color()
-        if isinstance(c, dict):
-            bg = c.get('bg')
-            border = c.get('border')
-        else:
-            bg = c
-            border = c
-        return format_html('<div style="width:32px;height:16px;border-radius:4px;background:{};border:2px solid {}"></div>', bg, border)
-    color_preview.short_description = 'Preview'
-
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        # present a simple palette of light background colors as radio choices
-        # build HTML labels so each radio shows a colored swatch and the hex text
-        choices = []
-        for c in PALETTE:
-            label_html = f'<span style="display:block;width:44px;height:18px;border-radius:6px;background:{c};border:2px solid rgba(0,0,0,0.08);"></span><span class="hex">{c}</span>'
-            choices.append((c, mark_safe(label_html)))
-        form.base_fields['color'] = forms.ChoiceField(choices=choices, required=False, widget=forms.RadioSelect(attrs={'class': 'palette-radio'}))
-        # if object has color as dict, normalize to bg hex
-        if obj and obj.color and isinstance(obj.color, dict):
-            form.base_fields['color'].initial = obj.color.get('bg')
-        return form
-
-    class Media:
-        css = {
-            'all': ('/static/tracker/admin_tag_palette.css',)
-        }
-        
+    list_display = ('nome', 'ore')
+    search_fields = ('nome',)
 
 admin.site.register(Tag, TagAdmin)
 admin.site.register(Project, ProjectAdmin)

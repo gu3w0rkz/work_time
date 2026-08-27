@@ -6,7 +6,6 @@ function getCookie(name){
 }
 
 export default function Dashboard(){
-  const PALETTE = ['#fff7f7', '#fffaf0', '#f7fff8', '#f0f7ff', '#f7f0ff', '#f7fbff', '#f3f3f3']
   const [projects,setProjects] = useState([])
   const [tags,setTags] = useState([])
   const [entries,setEntries] = useState([])
@@ -31,20 +30,30 @@ export default function Dashboard(){
     it: {
       dashboard: 'Dashboard',
       jira_ticket: 'Jira ticket',
-      what_worked: 'What have you worked on?',
-      project_placeholder: '-- Project --',
+      what_worked: 'A cosa hai lavorato?',
+      project_placeholder: '-- Progetto --',
       add_tag: 'Aggiungi tag',
       tag_name: 'Nome tag',
       create: 'Crea',
       add_entry: 'Aggiungi attività',
       start_stop: 'Start/Stop timer',
-      week_total: 'Week total',
+      week_total: 'Totale settimana',
       last_activities: 'Ultime attività',
       enter_tag_name: 'Inserisci nome tag',
       select_tag: 'Seleziona tag',
       error_create_tag: 'Errore creazione tag',
       error_toggle: 'Errore nel toggle',
       add_entry_tooltip: 'Compila tutti i campi richiesti',
+      in_progress: 'in corso',
+      no_project: 'Nessun progetto',
+      time_label: 'Orario',
+      duration_label: 'Durata',
+      type_label: 'Tipo',
+      project_label: 'Progetto',
+      tags_label: 'Tag',
+      description_label: 'Descrizione',
+      delete_confirm: 'Eliminare questa attività?',
+      stop_timer_title: 'Stop running timer',
     },
     en: {
       dashboard: 'Dashboard',
@@ -63,13 +72,21 @@ export default function Dashboard(){
       error_create_tag: 'Error creating tag',
       error_toggle: 'Toggle error',
       add_entry_tooltip: 'Fill all required fields',
+      in_progress: 'in progress',
+      no_project: 'No project',
+      time_label: 'Time',
+      duration_label: 'Duration',
+      type_label: 'Type',
+      project_label: 'Project',
+      tags_label: 'Tags',
+      description_label: 'Description',
+      delete_confirm: 'Delete this entry?',
+      stop_timer_title: 'Stop running timer',
     }
   }
 
   const t = (key) => (I18N[lang] && I18N[lang][key]) || I18N['it'][key]
-  const [showNewTag, setShowNewTag] = useState(false)
-  const [newTagName, setNewTagName] = useState('')
-  const [newTagColor, setNewTagColor] = useState(PALETTE[0])
+  // tag creation removed from FE; tags are managed in Django admin
 
   useEffect(()=>{ fetchData() }, [])
 
@@ -231,8 +248,8 @@ export default function Dashboard(){
     <div className="container py-4">
       <div className="card-panel" style={{position:'relative'}}>
         <div style={{position:'absolute', right:12, top:12, display:'flex', gap:8, zIndex:1000}}>
-          <button className="btn btn-sm" onClick={async()=>{ setLang('it'); try{ const data=new URLSearchParams(); data.append('language','it'); await fetch('/api/set_language/',{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇮🇹'}</button>
-          <button className="btn btn-sm" onClick={async()=>{ setLang('en'); try{ const data=new URLSearchParams(); data.append('language','en'); await fetch('/api/set_language/',{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇬🇧'}</button>
+          <button className={"btn btn-sm " + (lang==='it' ? 'active' : '')} onClick={async()=>{ setLang('it'); try{ const data=new URLSearchParams(); data.append('language','it'); await fetch('/api/set_language/',{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇮🇹'}</button>
+          <button className={"btn btn-sm " + (lang==='en' ? 'active' : '')} onClick={async()=>{ setLang('en'); try{ const data=new URLSearchParams(); data.append('language','en'); await fetch('/api/set_language/',{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇬🇧'}</button>
         </div>
         <h3 className="brand-title">{t('dashboard')}</h3>
 
@@ -277,10 +294,8 @@ export default function Dashboard(){
                 <div className="tag-display tag-selected" onClick={()=>setTagDropdownOpen(true)}>
                   {(() => {
                     const tObj = tags.find(t=>String(t.id)===String(selectedTag)) || {name:''}
-                    const bg = tObj && tObj.color && tObj.color.bg ? tObj.color.bg : (tObj && tObj.color ? tObj.color : '#f3f3f3')
-                    const border = tObj && tObj.color && tObj.color.border ? tObj.color.border : '#bdbdbd'
                     return (
-                      <span className="tag-chip" style={{backgroundColor: bg, border: `2px solid ${border}`, color: '#083218'}}>
+                      <span className="tag-chip">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="white"/></svg>
                         {tObj.name}
                       </span>
@@ -290,31 +305,13 @@ export default function Dashboard(){
               )}
               {tagDropdownOpen && (
                 <div className="tag-dropdown">
-                  <div style={{padding:8}}>
-                    <button className="btn btn-outline-primary" onClick={()=>{ setShowNewTag(s=>!s); setNewTagName(''); }}>{t('add_tag')}</button>
-                  </div>
-                  {showNewTag && (
-                    <div style={{padding:8, display:'grid', gridTemplateColumns:'repeat(8, 44px)', gap:8}}>
-                      {PALETTE.map(c=> (
-                        <button key={c} aria-label={c} title={c} onClick={()=>setNewTagColor(c)} style={{width:44,height:28,background:c,border:newTagColor===c? '3px solid #666' : '2px solid #bbb', borderRadius:6, cursor:'pointer'}} />
-                      ))}
-                      <div style={{gridColumn:'1 / -1', display:'flex', gap:8, marginTop:8}}>
-                        <input className="form-control" placeholder={t('tag_name')} value={newTagName} onChange={e=>setNewTagName(e.target.value)} />
-                        <button className="btn btn-primary" onClick={async()=>{
-                          if(!newTagName) return alert(t('enter_tag_name'))
-                          const data = new URLSearchParams(); data.append('name', newTagName); data.append('color', newTagColor)
-                          const resp = await fetch('/api/create_tag/', {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
-                          if(resp.ok){ const j = await resp.json(); setTags(prev=>[...prev, j]); setShowNewTag(false); setSelectedTag(j.id) } else { alert(t('error_create_tag')) }
-                        }}>{t('create')}</button>
-                      </div>
-                    </div>
-                  )}
+                  <div style={{padding:8}} />
                   {tags.map(t=> {
-                    const bg = t && t.color && t.color.bg ? t.color.bg : (t && t.color ? t.color : '#f3f3f3')
-                    const border = t && t.color && t.color.border ? t.color.border : '#bdbdbd'
+                    const bg = '#f3f3f3'
+                    const border = '#bdbdbd'
                     return (
                       <div key={t.id} className="tag-dropdown-item" onClick={()=>{ setSelectedTag(t.id); setTagDropdownOpen(false) }}>
-                        <span className="tag-chip" style={{backgroundColor: bg, border: `2px solid ${border}`, color: '#083218'}}>
+                        <span className="tag-chip">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="white"/></svg>
                           {t.name}
                         </span>
@@ -345,8 +342,8 @@ export default function Dashboard(){
           {/* week total moved below */}
         </div>
 
-        <h5>Ultime attività</h5>
-        <div className="week-total mb-3">Week total: <strong>{weekTotal}</strong></div>
+        <h5>{t('last_activities')}</h5>
+        <div className="week-total mb-3">{t('week_total')}: <strong>{weekTotal}</strong></div>
 
         {groupByDate(entries).map(g=> {
             // compute day total
@@ -369,29 +366,26 @@ export default function Dashboard(){
               <table className="entries-table">
                 <thead>
                   <tr>
-                    <th>Orario</th>
-                    <th>Durata</th>
-                    <th>Tipo</th>
-                    <th>Progetto</th>
-                    <th>Tag</th>
-                    <th>Descrizione</th>
+                    <th>{t('time_label')}</th>
+                    <th>{t('duration_label')}</th>
+                    <th>{t('type_label')}</th>
+                    <th>{t('project_label')}</th>
+                    <th>{t('tags_label')}</th>
+                    <th>{t('description_label')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {g.items.map(e=> (
                     <tr key={e.id}>
-                      <td>{formatTime(e.start)} — {e.end ? formatTime(e.end) : 'in corso'}</td>
+                      <td>{formatTime(e.start)} — {e.end ? formatTime(e.end) : t('in_progress')}</td>
                       <td>{formatDuration(e.start, e.end)}</td>
                       <td>{e.jira_issue_type || ''}</td>
-                      <td>{e.project || 'No project'}</td>
+                      <td>{e.project || t('no_project')}</td>
                       <td>
                         {(e.tags || []).map((t, idx)=> {
                           const name = (typeof t === 'string') ? t : t.name
-                          const color = (typeof t === 'string') ? null : (t.color || null)
-                          const bg = color && color.bg ? color.bg : (color || '#f3f3f3')
-                          const border = color && color.border ? color.border : '#bdbdbd'
                           return (
-                            <span key={idx} className="tag-chip" style={ color ? {backgroundColor: bg, border: `2px solid ${border}`, color: '#083218'} : {} }>
+                            <span key={idx} className="tag-chip">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="white"/></svg>
                               {name}
                             </span>
@@ -403,10 +397,10 @@ export default function Dashboard(){
                         {e.end ? (
                           <></>
                         ) : (
-                          <button className="btn-pause" title="Stop running timer" onClick={()=>{ toggle() }}>⏸</button>
+                          <button className="btn-pause" title={t('stop_timer_title')} onClick={()=>{ toggle() }}>⏸</button>
                         )}
                         <button className="btn-delete" title="Delete entry" onClick={async()=>{
-                          if(!confirm('Eliminare questa attività?')) return
+                          if(!confirm(t('delete_confirm'))) return
                           const data = new URLSearchParams(); data.append('id', e.id)
                           const resp = await fetch('/api/delete_entry/', {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
                           if(resp.ok){ fetchData() } else { alert('Errore durante l\'eliminazione') }

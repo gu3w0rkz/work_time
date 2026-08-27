@@ -32,11 +32,11 @@ def dashboard(request):
         # Keep POST handling minimal; creation of projects/tags should be done by admin in /admin/
         return redirect('tracker:dashboard')
 
-    entries = TimeEntry.objects.filter(user=request.user).order_by('-start')[:50]
+    entries = TimeEntry.objects.filter(utente=request.user).order_by('-inizio')[:50]
     # show projects and tags created by superuser(s)
-    projects = Project.objects.filter(owner__is_superuser=True)
+    projects = Project.objects.filter(responsabile__is_superuser=True)
     tags = Tag.objects.all()
-    open_entry = TimeEntry.objects.filter(user=request.user, end__isnull=True).first()
+    open_entry = TimeEntry.objects.filter(utente=request.user, fine__isnull=True).first()
     return render(request, 'tracker/dashboard.html', {
         'entries': entries,
         'projects': projects,
@@ -51,23 +51,23 @@ def toggle_ajax(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'method not allowed'}, status=405)
     user = request.user
-    open_entry = TimeEntry.objects.filter(user=user, end__isnull=True).first()
+    open_entry = TimeEntry.objects.filter(utente=user, fine__isnull=True).first()
     if open_entry:
-        open_entry.end = timezone.now()
+        open_entry.fine = timezone.now()
         open_entry.save()
-        return JsonResponse({'status': 'stopped', 'id': open_entry.id, 'end': open_entry.end.isoformat()})
+        return JsonResponse({'status': 'stopped', 'id': open_entry.id, 'end': open_entry.fine.isoformat()})
     else:
         project_id = request.POST.get('project')
         # only allow selecting projects created by superuser
-        project = Project.objects.filter(id=project_id, owner__is_superuser=True).first() if project_id else None
-        entry = TimeEntry.objects.create(user=user, project=project, start=timezone.now())
+        project = Project.objects.filter(id=project_id, responsabile__is_superuser=True).first() if project_id else None
+        entry = TimeEntry.objects.create(utente=user, progetto=project, inizio=timezone.now())
         # handle tags (multiple)
         tag_ids = request.POST.getlist('tags')
         if tag_ids:
             # accept only existing tags (creation reserved to admin)
             tags = Tag.objects.filter(id__in=tag_ids)
             entry.tags.set(tags)
-        return JsonResponse({'status': 'started', 'id': entry.id, 'start': entry.start.isoformat()})
+        return JsonResponse({'status': 'started', 'id': entry.id, 'start': entry.inizio.isoformat()})
 
 
 @login_required
@@ -80,17 +80,8 @@ def create_tag_ajax(request):
     name = request.POST.get('name', '').strip()
     if not name:
         return JsonResponse({'error': 'missing name'}, status=400)
-    tag, created = Tag.objects.get_or_create(name=name)
-    color = request.POST.get('color')
-    if color:
-        tag.color = color
-        tag.save()
-    col = tag.get_color()
-    if isinstance(col, dict):
-        color_obj = col
-    else:
-        color_obj = {'bg': col, 'border': col}
-    return JsonResponse({'id': tag.id, 'name': tag.name, 'color': color_obj, 'created': created})
+    tag, created = Tag.objects.get_or_create(nome=name)
+    return JsonResponse({'id': tag.id, 'name': tag.nome, 'created': created})
 
 
 def api_csrf(request):
@@ -136,8 +127,8 @@ def api_logout(request):
 def api_projects(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'unauthenticated'}, status=403)
-    qs = Project.objects.filter(owner=request.user)
-    data = [{'id': p.id, 'name': p.name} for p in qs]
+    qs = Project.objects.filter(responsabile=request.user)
+    data = [{'id': p.id, 'name': p.nome} for p in qs]
     return JsonResponse({'projects': data})
 
 
@@ -147,29 +138,24 @@ def api_tags(request):
     qs = Tag.objects.all()
     data = []
     for t in qs:
-        col = t.get_color()
-        # if stored color is just hex, ensure bg uses it
-        if isinstance(col, dict):
-            data.append({'id': t.id, 'name': t.name, 'color': col})
-        else:
-            data.append({'id': t.id, 'name': t.name, 'color': {'bg': col, 'border': col}})
+        data.append({'id': t.id, 'name': t.nome})
     return JsonResponse({'tags': data})
 
 
 def api_entries(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'unauthenticated'}, status=403)
-    qs = TimeEntry.objects.filter(user=request.user).order_by('-start')[:50]
+    qs = TimeEntry.objects.filter(utente=request.user).order_by('-inizio')[:50]
     data = []
     for e in qs:
         data.append({
             'id': e.id,
-            'project': e.project.name if e.project else None,
-            'jira_issue_type': e.jira_issue_type if hasattr(e, 'jira_issue_type') else None,
-            'description': e.description if hasattr(e, 'description') else None,
-            'start': e.start.isoformat(),
-            'end': e.end.isoformat() if e.end else None,
-            'tags': [({'id': t.id, 'name': t.name, 'color': (t.get_color() if isinstance(t.get_color(), dict) else {'bg': t.get_color(), 'border': t.get_color()})}) for t in e.tags.all()],
+            'project': e.progetto.nome if e.progetto else None,
+            'jira_issue_type': e.tipo_ticket if hasattr(e, 'tipo_ticket') else None,
+            'description': e.descrizione if hasattr(e, 'descrizione') else None,
+            'start': e.inizio.isoformat(),
+            'end': e.fine.isoformat() if e.fine else None,
+            'tags': [{'id': t.id, 'name': t.nome} for t in e.tags.all()],
         })
     return JsonResponse({'entries': data})
 
@@ -263,7 +249,7 @@ def api_add_entry(request):
     minutes = int(request.POST.get('minutes') or 0)
 
     # validate project (only superuser-created projects allowed)
-    project = Project.objects.filter(id=project_id, owner__is_superuser=True).first() if project_id else None
+    project = Project.objects.filter(id=project_id, responsabile__is_superuser=True).first() if project_id else None
 
     # validate tag (only superuser-created tags allowed)
     tag = Tag.objects.filter(id=tag_id).first() if tag_id else None
@@ -320,15 +306,15 @@ def api_add_entry(request):
         duration = timedelta(hours=hours, minutes=minutes)
         end_dt = start_dt + duration
 
-    entry = TimeEntry.objects.create(user=request.user, project=project, description=description, start=start_dt, end=end_dt)
+    entry = TimeEntry.objects.create(utente=request.user, progetto=project, descrizione=description, inizio=start_dt, fine=end_dt)
     # optional jira issue type
     jira_issue_type = request.POST.get('jira_issue_type')
     if jira_issue_type:
-        entry.jira_issue_type = jira_issue_type
+        entry.tipo_ticket = jira_issue_type
         entry.save()
     # set tags: prefer list 'tags' if present
     if tag_ids:
-        tags_qs = Tag.objects.filter(id__in=tag_ids, owner__is_superuser=True)
+        tags_qs = Tag.objects.filter(id__in=tag_ids)
         entry.tags.set(tags_qs)
     elif tag:
         entry.tags.set([tag])
@@ -343,7 +329,7 @@ def api_delete_entry(request):
     entry_id = request.POST.get('id') or request.POST.get('entry')
     if not entry_id:
         return JsonResponse({'error': 'missing id'}, status=400)
-    entry = TimeEntry.objects.filter(id=entry_id, user=request.user).first()
+    entry = TimeEntry.objects.filter(id=entry_id, utente=request.user).first()
     if not entry:
         return JsonResponse({'error': 'not found'}, status=404)
     entry.delete()

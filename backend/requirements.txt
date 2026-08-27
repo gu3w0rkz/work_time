@@ -3,3 +3,4 @@ requests>=2.30
 python-dotenv>=1.0
 psycopg[binary]
 dj-database-url
+gunicorn==26.2.0

@@ -19,7 +19,7 @@ JIRA_EMAIL = os.environ.get('JIRA_EMAIL')
 JIRA_API_TOKEN = os.environ.get('JIRA_API_TOKEN')
 JIRA_CONFIGURED = bool(JIRA_BASE_URL and JIRA_EMAIL and JIRA_API_TOKEN)
 
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app']
 
@@ -93,7 +93,6 @@ LOCALE_PATHS = [
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

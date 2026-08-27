@@ -183,6 +183,19 @@ export default function Dashboard(){
     if (resp.ok){ fetchData() }
   }
 
+  useEffect(()=>{
+    // if selected ticket is a Bug, clear any selected tag that starts with 'basket'
+    try{
+      const isBug = jiraIssueType && String(jiraIssueType).toLowerCase().includes('bug')
+      if(isBug && selectedTag){
+        const sel = tags.find(t=>String(t.id)===String(selectedTag))
+        if(sel && sel.name && String(sel.name).toLowerCase().startsWith('basket')){
+          setSelectedTag('')
+        }
+      }
+    }catch(e){/* ignore */}
+  }, [jiraIssueType, tags, selectedTag])
+
   function recap(){
     const h = Number(hours)||0
     const m = Number(minutes)||0
@@ -253,35 +266,40 @@ export default function Dashboard(){
         </div>
         <h3 className="brand-title">{t('dashboard')}</h3>
 
-        <div className="top-bar mb-3">
-          <div style={{position:'relative', flex:'1 1 40%', display:'flex', flexDirection:'column', gap:6}}>
-            <div style={{position:'relative'}}>
+        <div className="top-bar mb-3" style={{display:'flex', gap:12, alignItems:'stretch'}}>
+          <div style={{flex:1, display:'flex', flexDirection:'column', gap:12}}>
+            <div className="top-row" style={{display:'flex', gap:12, alignItems:'center'}}>
+            <div style={{flex:1, position:'relative'}}>
               <div style={{display:'flex', alignItems:'center', gap:8}}>
-                <input className="form-control jira-input" placeholder={t('jira_ticket')} value={jiraQuery} onChange={e=>setJiraQuery(e.target.value)} />
+                <input className="form-control jira-input" style={{width:'100%'}} placeholder={t('jira_ticket')} value={jiraQuery} onChange={e=>setJiraQuery(e.target.value)} />
                 {jiraIssueType ? <span className="jira-type-badge">{jiraIssueType}</span> : null}
               </div>
               {jiraOpen && jiraResults.length>0 && (
-                  <div className="jira-dropdown above" style={{left:8, width:'calc(100% - 16px)', maxHeight:200, overflow:'auto'}}>
+                <div className="jira-dropdown above" style={{left:8, width:'calc(100% - 16px)', maxHeight:200, overflow:'auto'}}>
                   {jiraResults.map(i=> (
-                      <div key={i.key} className="jira-item" onClick={()=>{ setDescription((prev)=>`${i.key}: ${i.summary}`); setJiraOpen(false); setJiraQuery(''); setJiraIssueType(i.issuetype || '') }}>{i.key} — {i.summary}</div>
-                    ))}
+                    <div key={i.key} className="jira-item" onClick={()=>{ setDescription((prev)=>`${i.key}: ${i.summary}`); setJiraOpen(false); setJiraQuery(''); setJiraIssueType(i.issuetype || '') }}>{i.key} — {i.summary}</div>
+                  ))}
                 </div>
               )}
             </div>
-            <input className="form-control desc" placeholder={t('what_worked')} value={description} onChange={e=>setDescription(e.target.value)} />
-          </div>
 
-          <div>
-            <select className="form-control project-w" value={selectedProject} onChange={e=>{
-              const val = e.target.value
-              setSelectedProject(val)
-              const p = projects.find(p=>String(p.id)===String(val))
-              setSelectedProjectName(p ? p.name : '')
-            }}>
-              <option value="">{t('project_placeholder')}</option>
-              {projects.map(p=> (<option key={p.id} value={p.id}>{p.name}</option>))}
-            </select>
-          </div>
+            <div style={{minWidth:140, width:140}}>
+              <select className="form-control project-w" style={{width:'100%'}} value={selectedProject} onChange={e=>{
+                const val = e.target.value
+                setSelectedProject(val)
+                const p = projects.find(p=>String(p.id)===String(val))
+                setSelectedProjectName(p ? p.name : '')
+              }}>
+                <option value="">{t('project_placeholder')}</option>
+                {projects.map(p=> (<option key={p.id} value={p.id}>{p.name}</option>))}
+              </select>
+            </div>
+            </div>
+
+            <div className="bottom-row" style={{display:'flex', gap:12, alignItems:'center', marginTop:0}}>
+            <div style={{flex:1}}>
+              <input className="form-control desc" style={{width:'100%'}} placeholder={t('what_worked')} value={description} onChange={e=>setDescription(e.target.value)} />
+            </div>
 
             <div className="tag-select-wrapper">
               {!selectedTag ? (
@@ -309,8 +327,16 @@ export default function Dashboard(){
                   {tags.map(t=> {
                     const bg = '#f3f3f3'
                     const border = '#bdbdbd'
+                    const isBug = jiraIssueType && String(jiraIssueType).toLowerCase().includes('bug')
+                    const isBasket = t.name && String(t.name).toLowerCase().startsWith('basket')
+                    const disabled = isBug && isBasket
                     return (
-                      <div key={t.id} className="tag-dropdown-item" onClick={()=>{ setSelectedTag(t.id); setTagDropdownOpen(false) }}>
+                      <div key={t.id}
+                        className={"tag-dropdown-item" + (disabled ? ' disabled' : '')}
+                        onClick={()=>{ if(disabled) return; setSelectedTag(t.id); setTagDropdownOpen(false) }}
+                        style={disabled ? {opacity:0.5, pointerEvents:'none', cursor:'not-allowed'} : {}}
+                        title={disabled ? 'disabled for Bug tickets' : ''}
+                      >
                         <span className="tag-chip">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="tag-icon"><path d="M3 11L11 3L21 13L13 21L3 11Z" stroke="#2f8f5d" strokeWidth="1" fill="white"/></svg>
                           {t.name}
@@ -322,24 +348,25 @@ export default function Dashboard(){
               )}
             </div>
 
-          <input type="time" className="form-control time-w" value={startTime} onChange={e=>setStartTime(e.target.value)} />
-          <input type="time" className="form-control time-w" value={endTime} onChange={e=>setEndTime(e.target.value)} />
+            <input type="time" className="form-control time-w" value={startTime} onChange={e=>setStartTime(e.target.value)} />
+            <input type="time" className="form-control time-w" value={endTime} onChange={e=>setEndTime(e.target.value)} />
 
-          <input type="date" className="form-control date-w" value={date} onChange={e=>setDate(e.target.value)} />
+            <input type="date" className="form-control date-w" value={date} onChange={e=>setDate(e.target.value)} />
 
-          <div className="px-2 duration">{formatDuration(date+'T'+startTime+':00', date+'T'+endTime+':00')}</div>
+            <div className="px-2 duration">{formatDuration(date+'T'+startTime+':00', date+'T'+endTime+':00')}</div>
 
-          <div className="add-toggle-stack">
-            <button aria-label={t('add_entry')} className="btn-add-icon" onClick={addEntry} disabled={!isValidAdd()} title={isValidAdd() ? t('add_entry') : t('add_entry_tooltip')}>
+            </div>
+          </div>
+
+          <div style={{width:64, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8}}>
+            <button aria-label={t('add_entry')} className="btn-add-icon" onClick={addEntry} disabled={!isValidAdd()} title={isValidAdd() ? t('add_entry') : t('add_entry_tooltip')} style={{width:48, height:48, borderRadius:8}}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <rect x="2" y="11" width="20" height="2" rx="1" fill="white"/>
                 <rect x="11" y="2" width="2" height="20" rx="1" fill="white"/>
               </svg>
             </button>
-            <button className="btn btn-toggle" onClick={toggle} title="Start/Stop timer">⏱</button>
+            <button className="btn btn-toggle" onClick={toggle} title="Start/Stop timer" style={{width:48, height:48, borderRadius:8}}>⏱</button>
           </div>
-
-          {/* week total moved below */}
         </div>
 
         <h5>{t('last_activities')}</h5>

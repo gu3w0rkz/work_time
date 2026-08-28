@@ -66,7 +66,7 @@ TEMPLATES = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    'https://work-time-phi.vercel.app/',
+    'https://work-time-phi.vercel.app',
 ]
 CORS_ALLOW_CREDENTIALS = True
 

@@ -74,6 +74,8 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = []
 
+CSRF_TRUSTED_ORIGINS = ['https://work-time-44mg.onrender.com']
+
 LANGUAGE_CODE = 'it-it'
 TIME_ZONE = 'UTC'
 USE_I18N = True

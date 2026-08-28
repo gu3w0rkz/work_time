@@ -21,8 +21,7 @@ JIRA_CONFIGURED = bool(JIRA_BASE_URL and JIRA_EMAIL and JIRA_API_TOKEN)
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app']
-
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app', '.onrender.com']
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

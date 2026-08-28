@@ -22,6 +22,7 @@ JIRA_CONFIGURED = bool(JIRA_BASE_URL and JIRA_EMAIL and JIRA_API_TOKEN)
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app', '.onrender.com']
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -67,6 +68,7 @@ TEMPLATES = [
 
 CORS_ALLOWED_ORIGINS = [
     'https://work-time-phi.vercel.app',
+    'http://localhost:3000',
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -82,7 +84,11 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = []
 
-CSRF_TRUSTED_ORIGINS = ['https://work-time-44mg.onrender.com']
+CSRF_TRUSTED_ORIGINS = [
+    'https://work-time-44mg.onrender.com',
+    'https://work-time-phi.vercel.app',
+    'http://localhost:3000',
+]
 
 LANGUAGE_CODE = 'it-it'
 TIME_ZONE = 'UTC'
@@ -102,8 +108,6 @@ LOCALE_PATHS = [
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -117,9 +121,3 @@ AUTHENTICATION_BACKENDS = [
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
-
-# Allow CSRF from the React dev server (Vite) during development
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]

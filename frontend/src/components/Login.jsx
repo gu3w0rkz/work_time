@@ -1,5 +1,7 @@
 import React, {useState, useEffect} from 'react'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 function getCookie(name){
   const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)')
   return v ? decodeURIComponent(v[2]) : null
@@ -11,7 +13,7 @@ export default function Login({onLogin}){
 
   useEffect(()=>{
     // fetch csrf to ensure cookie set
-    fetch('/api/csrf/', {credentials: 'include'})
+    fetch(`${API_URL}/api/csrf/`, {credentials: 'include'})
   },[])
 
   const [error, setError] = React.useState(null)
@@ -22,7 +24,7 @@ export default function Login({onLogin}){
     const data = new URLSearchParams();
     data.append('email', email);
     data.append('password', password);
-    const resp = await fetch('/api/login/', {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
+    const resp = await fetch(`${API_URL}/api/login/`, {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
     const j = await resp.json().catch(()=>null)
     if (resp.ok){
       onLogin()

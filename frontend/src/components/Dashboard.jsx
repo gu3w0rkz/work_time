@@ -1,5 +1,7 @@
 import React, {useEffect, useState} from 'react'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 function getCookie(name){
   const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)')
   return v ? decodeURIComponent(v[2]) : null
@@ -86,15 +88,13 @@ export default function Dashboard(){
   }
 
   const t = (key) => (I18N[lang] && I18N[lang][key]) || I18N['it'][key]
-  // tag creation removed from FE; tags are managed in Django admin
 
   useEffect(()=>{ fetchData() }, [])
 
   useEffect(()=>{
-    // get current language from server
     (async ()=>{
       try{
-        const r = await fetch('/api/lang/', {credentials:'include'})
+        const r = await fetch(`${API_URL}/api/lang/`, {credentials:'include'})
         if(r.ok){ const j = await r.json(); setLang(j.language && j.language.slice(0,2) || 'it') }
       }catch(e){ }
     })()
@@ -104,7 +104,7 @@ export default function Dashboard(){
     async function search(){
       if(!jiraQuery || jiraQuery.length<2) { setJiraResults([]); return }
       try{
-        const resp = await fetch('/api/jira/search/?q='+encodeURIComponent(jiraQuery), {credentials:'include'})
+        const resp = await fetch(`${API_URL}/api/jira/search/?q=`+encodeURIComponent(jiraQuery), {credentials:'include'})
         if(!resp.ok) return
         const j = await resp.json()
         setJiraResults(j.issues || [])
@@ -116,11 +116,11 @@ export default function Dashboard(){
   }, [jiraQuery])
 
   async function fetchData(){
-    const p = await (await fetch('/api/projects/', {credentials:'include'})).json()
+    const p = await (await fetch(`${API_URL}/api/projects/`, {credentials:'include'})).json()
     setProjects(p.projects||[])
-    const t = await (await fetch('/api/tags/', {credentials:'include'})).json()
+    const t = await (await fetch(`${API_URL}/api/tags/`, {credentials:'include'})).json()
     setTags(t.tags||[])
-    const e = await (await fetch('/api/entries/', {credentials:'include'})).json()
+    const e = await (await fetch(`${API_URL}/api/entries/`, {credentials:'include'})).json()
     setEntries(e.entries||[])
     calcWeekTotal(e.entries||[])
   }
@@ -179,12 +179,11 @@ export default function Dashboard(){
     const data = new URLSearchParams();
     data.append('project', selectedProject);
     if (selectedTag) data.append('tags', selectedTag);
-    const resp = await fetch('/api/toggle/', {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
+    const resp = await fetch(`${API_URL}/api/toggle/`, {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
     if (resp.ok){ fetchData() }
   }
 
   useEffect(()=>{
-    // if selected ticket is a Bug, clear any selected tag that starts with 'basket'
     try{
       const isBug = jiraIssueType && String(jiraIssueType).toLowerCase().includes('bug')
       if(isBug && selectedTag){
@@ -204,14 +203,12 @@ export default function Dashboard(){
 
   async function addEntry(){
     const data = new URLSearchParams()
-    // project: prefer id found from typed project name
     const projectId = selectedProject || findProjectIdByName(selectedProjectName)
     data.append('project', projectId)
     if (selectedTag) data.append('tag', selectedTag)
     data.append('description', description)
     data.append('date', date)
     if (jiraIssueType) data.append('jira_issue_type', jiraIssueType)
-    // prefer start/end if provided
     if (startTime && endTime){
       const startIso = new Date(date + 'T' + startTime + ':00').toISOString()
       const endIso = new Date(date + 'T' + endTime + ':00').toISOString()
@@ -221,7 +218,7 @@ export default function Dashboard(){
       data.append('hours', hours)
       data.append('minutes', minutes)
     }
-    const resp = await fetch('/api/add_entry/', {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
+    const resp = await fetch(`${API_URL}/api/add_entry/`, {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
     if (resp.ok){
       setDescription('')
       setHours('0')
@@ -242,27 +239,23 @@ export default function Dashboard(){
     if(!description || description.trim().length<2) return false
     const proj = selectedProject || findProjectIdByName(selectedProjectName)
     if(!proj) return false
-    // if using times
     if(startTime && endTime){
       const s = new Date(date + 'T' + startTime + ':00')
       const e = new Date(date + 'T' + endTime + ':00')
       if(e <= s) return false
       return true
     }
-    // else duration
     const h = Number(hours)||0
     const m = Number(minutes)||0
     return (h>0 || m>0)
   }
 
-  // single tag selection handled by the select input
-
     return (
     <div className="container py-4">
       <div className="card-panel" style={{position:'relative'}}>
         <div style={{position:'absolute', right:12, top:12, display:'flex', gap:8, zIndex:1000}}>
-          <button className={"btn btn-sm " + (lang==='it' ? 'active' : '')} onClick={async()=>{ setLang('it'); try{ const data=new URLSearchParams(); data.append('language','it'); await fetch('/api/set_language/',{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇮🇹'}</button>
-          <button className={"btn btn-sm " + (lang==='en' ? 'active' : '')} onClick={async()=>{ setLang('en'); try{ const data=new URLSearchParams(); data.append('language','en'); await fetch('/api/set_language/',{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇬🇧'}</button>
+          <button className={"btn btn-sm " + (lang==='it' ? 'active' : '')} onClick={async()=>{ setLang('it'); try{ const data=new URLSearchParams(); data.append('language','it'); await fetch(`${API_URL}/api/set_language/`,{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇮🇹'}</button>
+          <button className={"btn btn-sm " + (lang==='en' ? 'active' : '')} onClick={async()=>{ setLang('en'); try{ const data=new URLSearchParams(); data.append('language','en'); await fetch(`${API_URL}/api/set_language/`,{method:'POST',credentials:'include',headers:{'X-CSRFToken': getCookie('csrftoken')},body:data}) }catch(e){} }}>{'🇬🇧'}</button>
         </div>
         <h3 className="brand-title">{t('dashboard')}</h3>
 
@@ -325,8 +318,6 @@ export default function Dashboard(){
                 <div className="tag-dropdown">
                   <div style={{padding:8}} />
                   {tags.map(t=> {
-                    const bg = '#f3f3f3'
-                    const border = '#bdbdbd'
                     const isBug = jiraIssueType && String(jiraIssueType).toLowerCase().includes('bug')
                     const isBasket = t.name && String(t.name).toLowerCase().startsWith('basket')
                     const disabled = isBug && isBasket
@@ -373,7 +364,6 @@ export default function Dashboard(){
         <div className="week-total mb-3">{t('week_total')}: <strong>{weekTotal}</strong></div>
 
         {groupByDate(entries).map(g=> {
-            // compute day total
             let daySec = 0
             g.items.forEach(e=>{
               if(e.start){
@@ -388,8 +378,8 @@ export default function Dashboard(){
             return (
             <div key={g.date} className="mb-3">
               <div className="entries-day-header p-2">{formatDate(g.date)} <span className="day-total">{dayTotal}</span></div>
-              
-              
+
+
               <table className="entries-table">
                 <thead>
                   <tr>
@@ -429,7 +419,7 @@ export default function Dashboard(){
                         <button className="btn-delete" title="Delete entry" onClick={async()=>{
                           if(!confirm(t('delete_confirm'))) return
                           const data = new URLSearchParams(); data.append('id', e.id)
-                          const resp = await fetch('/api/delete_entry/', {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
+                          const resp = await fetch(`${API_URL}/api/delete_entry/`, {method:'POST', credentials:'include', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: data})
                           if(resp.ok){ fetchData() } else { alert('Errore durante l\'eliminazione') }
                         }}>🗑</button>
                       </td>

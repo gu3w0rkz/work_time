@@ -22,7 +22,7 @@ JIRA_CONFIGURED = bool(JIRA_BASE_URL and JIRA_EMAIL and JIRA_API_TOKEN)
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app', '.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app', '.onrender.com', 'work-time-44mg.onrender.com']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -69,7 +69,11 @@ TEMPLATES = [
 
 CORS_ALLOWED_ORIGINS = [
     'https://work-time-phi.vercel.app',
+    'https://work-time-44mg.onrender.com',
     'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
 ]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r'^https://.*\.vercel\.app$',
@@ -91,14 +95,22 @@ AUTH_PASSWORD_VALIDATORS = []
 CSRF_TRUSTED_ORIGINS = [
     'https://work-time-44mg.onrender.com',
     'https://work-time-phi.vercel.app',
-    'https://*.vercel.app',
     'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
 ]
 
-CSRF_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+if DEBUG:
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+else:
+    CSRF_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
 
 LANGUAGE_CODE = 'it-it'
 TIME_ZONE = 'UTC'

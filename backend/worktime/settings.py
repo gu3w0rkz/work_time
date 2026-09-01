@@ -21,6 +21,7 @@ JIRA_CONFIGURED = bool(JIRA_BASE_URL and JIRA_EMAIL and JIRA_API_TOKEN)
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.vercel.app', '.onrender.com']
 
 INSTALLED_APPS = [
@@ -70,6 +71,9 @@ CORS_ALLOWED_ORIGINS = [
     'https://work-time-phi.vercel.app',
     'http://localhost:3000',
 ]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://.*\.vercel\.app$',
+]
 CORS_ALLOW_CREDENTIALS = True
 
 WSGI_APPLICATION = 'worktime.wsgi.application'
@@ -87,8 +91,14 @@ AUTH_PASSWORD_VALIDATORS = []
 CSRF_TRUSTED_ORIGINS = [
     'https://work-time-44mg.onrender.com',
     'https://work-time-phi.vercel.app',
+    'https://*.vercel.app',
     'http://localhost:3000',
 ]
+
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 LANGUAGE_CODE = 'it-it'
 TIME_ZONE = 'UTC'
